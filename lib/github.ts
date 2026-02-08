@@ -34,13 +34,15 @@ export interface Commit {
 
 // --- API Helpers ---
 
-export async function getUserRepos(): Promise<Repo[]> {
+export type ReposResult = { repos: Repo[]; hasToken: boolean };
+
+export async function getUserRepos(): Promise<ReposResult> {
   const { getToken } = await auth();
   const token = await getToken({ template: "oauth_github" });
 
   if (!token) {
     console.error("No GitHub token found. User might not be logged in with GitHub.");
-    return [];
+    return { repos: [], hasToken: false };
   }
 
   const res = await fetch("https://api.github.com/user/repos?sort=updated&per_page=30", {
@@ -53,10 +55,11 @@ export async function getUserRepos(): Promise<Repo[]> {
 
   if (!res.ok) {
     console.error("Failed to fetch repos:", await res.text());
-    return [];
+    return { repos: [], hasToken: true };
   }
 
-  return res.json();
+  const repos = await res.json();
+  return { repos, hasToken: true };
 }
 
 export type SimpleCommit = {

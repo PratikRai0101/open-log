@@ -6,7 +6,9 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 
 export default async function Dashboard() {
-  const repos: GHRepo[] = await getUserRepos();
+  const result = await getUserRepos();
+  const repos: GHRepo[] = result.repos ?? [];
+  const hasToken = result.hasToken;
 
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white relative overflow-hidden">
@@ -74,44 +76,68 @@ export default async function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {repos.length > 0 ? (
-              repos.map((repo) => (
-                <Link href={`/generate/${repo.full_name}`} key={repo.id}>
-                  <div className="group relative p-5 h-36 flex flex-col justify-between bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-white/10 rounded-xl transition-all cursor-pointer overflow-hidden backdrop-blur-sm">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <SignedIn>
+              {hasToken ? (
+                repos.length > 0 ? (
+                  repos.map((repo) => (
+                    <Link href={`/generate/${repo.full_name}`} key={repo.id}>
+                      <div className="group relative p-5 h-36 flex flex-col justify-between bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-white/10 rounded-xl transition-all cursor-pointer overflow-hidden backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="text-zinc-500 group-hover:text-[#FF4F4F] transition-colors">
-                            {repo.private ? <Lock size={18} /> : <Globe size={18} />}
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="text-zinc-500 group-hover:text-[#FF4F4F] transition-colors">
+                                {repo.private ? <Lock size={18} /> : <Globe size={18} />}
+                              </div>
+                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[140px]">{repo.name}</span>
+                            </div>
+                            {repo.language && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/5">{repo.language}</span>
+                            )}
                           </div>
-                          <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[140px]">{repo.name}</span>
+                          <p className="text-[12px] text-zinc-500 line-clamp-1">{repo.description || "No description provided"}</p>
                         </div>
-                        {repo.language && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/5">{repo.language}</span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-zinc-500 line-clamp-1">{repo.description || "No description provided"}</p>
-                    </div>
 
-                    <div className="relative z-10 flex items-center justify-between mt-auto">
-                      <div className="flex items-center gap-2 text-[11px] text-zinc-600">
-                        <span className={`size-1.5 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-500"} shadow-[0_0_8px_currentColor]`} />
-                        {formatDistanceToNow(new Date(repo.updated_at))} ago
+                        <div className="relative z-10 flex items-center justify-between mt-auto">
+                          <div className="flex items-center gap-2 text-[11px] text-zinc-600">
+                            <span className={`size-1.5 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-500"} shadow-[0_0_8px_currentColor]`} />
+                            {formatDistanceToNow(new Date(repo.updated_at))} ago
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 text-zinc-400">
+                            <ArrowRight size={16} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 text-zinc-400">
-                        <ArrowRight size={16} />
-                      </div>
-                    </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center py-12 border border-dashed border-white/10 rounded-xl">
+                    <p className="text-zinc-500 text-sm">No repositories found.</p>
                   </div>
-                </Link>
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-12 border border-dashed border-white/10 rounded-xl">
-                <p className="text-zinc-500 text-sm">No repositories found.</p>
+                )
+              ) : (
+                <div className="col-span-2 p-8 border border-white/10 bg-white/[0.02] rounded-xl flex flex-col items-center justify-center text-center">
+                  <Lock className="w-8 h-8 text-zinc-600 mb-3" />
+                  <h3 className="text-zinc-200 font-medium mb-1">Connect GitHub</h3>
+                  <p className="text-zinc-500 text-sm mb-4">Connect your GitHub account to view and edit repositories in ShipLog.</p>
+                  <SignInButton mode="modal">
+                    <button className="bg-[#FF4F4F] hover:bg-red-600 text-white text-xs font-medium px-4 py-2 rounded shadow-[0_0_15px_rgba(255,79,79,0.3)] transition-all">Connect GitHub</button>
+                  </SignInButton>
+                </div>
+              )}
+            </SignedIn>
+
+            <SignedOut>
+              <div className="col-span-2 p-8 border border-white/10 bg-white/[0.02] rounded-xl flex flex-col items-center justify-center text-center">
+                <Lock className="w-8 h-8 text-zinc-600 mb-3" />
+                <h3 className="text-zinc-200 font-medium mb-1">Authentication Required</h3>
+                <p className="text-zinc-500 text-sm mb-4">Sign in to view your GitHub repositories.</p>
+                <SignInButton mode="modal">
+                  <button className="bg-[#FF4F4F] hover:bg-red-600 text-white text-xs font-medium px-4 py-2 rounded shadow-[0_0_15px_rgba(255,79,79,0.3)] transition-all">Connect GitHub</button>
+                </SignInButton>
               </div>
-            )}
+            </SignedOut>
           </div>
         </div>
       </main>
