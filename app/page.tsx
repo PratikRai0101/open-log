@@ -86,7 +86,7 @@ export default function Home() {
 
       <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[min(1200px,94%)] z-40 glass-card px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-gradient-to-r from-[#FF4F4F] to-[#6E5BFF]" />
+          <div className="w-8 h-8 rounded-md bg-linear-to-r from-[#FF4F4F] to-[#6E5BFF]" />
           <span className="text-sm font-semibold">ShipLog</span>
         </div>
         <nav className="hidden md:flex items-center gap-4 text-sm opacity-90">
@@ -100,7 +100,7 @@ export default function Home() {
         <div />
       </header>
 
-      <main className="w-full max-w-[1200px] mx-auto px-6 pt-36 pb-20">
+      <main className="w-full max-w-300 mx-auto px-6 pt-36 pb-20">
         <div className="flex justify-center">
           <SearchIsland query={query} setQuery={setQuery} />
         </div>
