@@ -124,3 +124,166 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* --- Raycast Aesthetic Additions --- */
+:root{
+  --bg-obsidian: #050505;
+  --bg-midnight: #010101;
+  --text-primary: #FF4F4F;
+  --border-glass: rgba(255,255,255,0.08);
+  --glass-plate: rgba(255,255,255,0.03);
+  --sauce-blur: 20px;
+}
+
+html, body, #__next { height: 100%; }
+body{
+  background-color: var(--bg-obsidian);
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: radial-gradient(1200px 420px at 10% 24%, rgba(255,79,79,0.04), transparent 10%), radial-gradient(900px 360px at 90% 74%, rgba(88,88,255,0.03), transparent 10%);
+  background-color: var(--bg-obsidian);
+  transition: background-color .12s linear;
+}
+
+/* Anamorphic flares */
+.anamorphic-flare-1,
+.anamorphic-flare-2 {
+  position: absolute;
+  pointer-events: none;
+  filter: blur(72px) saturate(120%);
+  mix-blend-mode: screen;
+  opacity: .95;
+  z-index: 0;
+}
+.anamorphic-flare-1 {
+  width: 820px;
+  height: 420px;
+  left: -14%;
+  top: -8%;
+  background: radial-gradient(closest-side, rgba(255,79,79,0.28), transparent 40%);
+  transform-origin: center;
+  transform: scaleX(1.8);
+  animation: anamorphic-spin 64s linear infinite;
+}
+.anamorphic-flare-2 {
+  width: 700px;
+  height: 360px;
+  right: -10%;
+  bottom: -6%;
+  background: radial-gradient(closest-side, rgba(88,88,255,0.14), transparent 40%);
+  transform-origin: center;
+  transform: scaleX(1.6);
+  animation: anamorphic-spin 96s linear reverse infinite;
+}
+
+/* Glass base */
+.glass-card {
+  background: var(--glass-plate);
+  backdrop-filter: blur(var(--sauce-blur));
+  -webkit-backdrop-filter: blur(var(--sauce-blur));
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+  border-radius: 12px;
+}
+
+/* Repo hover gradient */
+.repo-card {
+  transition: box-shadow .18s ease, border-image-slice .18s ease, transform .14s ease;
+}
+.repo-card:hover {
+  transform: translateY(-6px);
+  border-image-source: linear-gradient(90deg, rgba(255,79,79,0.95), rgba(110,88,255,0.88));
+  border-image-slice: 1;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.65), 0 0 28px rgba(255,79,79,0.04);
+}
+
+/* Liquid button */
+.liquid-button {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .5rem 1rem;
+  border-radius: .5rem;
+  border: 1px solid var(--border-glass);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  isolation: isolate;
+}
+.liquid-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  background-size: 200% 100%;
+  z-index: 0;
+  animation: liquid-shimmer 3.2s linear infinite;
+  pointer-events: none;
+}
+.liquid-button > * { position: relative; z-index: 1; }
+
+/* Red pulse for active states */
+.pulse-active {
+  box-shadow: 0 0 12px rgba(255,79,79,0.95);
+  border-color: rgba(255,79,79,0.18);
+  transition: box-shadow .16s ease, border-color .16s ease;
+}
+
+/* Typewriter cursor */
+.type-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--text-primary);
+  vertical-align: text-bottom;
+  animation: type-red-blink 1s steps(1) infinite;
+}
+
+/* Search island */
+.search-island {
+  width: min(760px, 92vw);
+  margin-inline: auto;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  padding: .6rem .9rem;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.65);
+}
+
+/* Commit checkbox */
+.commit-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border-glass);
+  background: rgba(255,255,255,0.01);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow .12s ease, background .12s ease;
+}
+.commit-checkbox input[type="checkbox"] { display: none; }
+.commit-checkbox.checked {
+  background: linear-gradient(180deg, rgba(255,79,79,0.12), rgba(255,79,79,0.06));
+  box-shadow: 0 0 8px rgba(255,79,79,0.95);
+  border-color: rgba(255,79,79,0.18);
+}
+
+/* Huge headings for public page */
+.huge-heading {
+  font-size: clamp(2.5rem, 9vw, 4.5rem);
+  line-height: 0.9;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@layer base{
+  * { box-sizing: border-box; }
+  body { min-height: 100vh; }
+}
