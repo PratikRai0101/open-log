@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Check, ArrowRight, GitCommit } from "lucide-react";
+import { getCommits, SimpleCommit } from "../../../lib/github";
 
 type Commit = {
   id: string;
@@ -30,6 +31,28 @@ const MOCK_COMMITS: Commit[] = [
 
 export default function WorkstationClient({ repo }: { repo?: string }) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [commits, setCommits] = useState<SimpleCommit[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (!repo) return;
+      setLoading(true);
+      try {
+        const c = await getCommits(repo);
+        if (mounted) setCommits(c.slice(0, 50));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [repo]);
 
   function toggle(id: string) {
     setSelected((s) => ({ ...s, [id]: !s[id] }));
@@ -44,7 +67,7 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
   return (
     <div className="h-screen flex overflow-hidden bg-bg-midnight text-white">
       {/* Left Sidebar */}
-      <aside className="w-[380px] shrink-0 h-full bg-[#050505]/60 backdrop-blur-xl border-r border-[rgba(255,255,255,0.04)] overflow-y-auto p-4">
+        <aside className="w-[380px] shrink-0 h-full bg-[#050505]/60 backdrop-blur-xl border-r border-[rgba(255,255,255,0.04)] overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-md bg-gradient-to-br from-[#FF4F4F] to-[#6E5BFF]" />
@@ -56,12 +79,17 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
         </div>
 
         <div className="space-y-2">
-          {MOCK_COMMITS.map((c) => {
-            const checked = !!selected[c.id];
+          {loading && <div className="text-xs text-white/60">Loading commits...</div>}
+          {!loading && commits && commits.length === 0 && (
+            <div className="text-xs text-white/60">No commits found.</div>
+          )}
+
+          {!loading && commits && commits.map((c) => {
+            const checked = !!selected[c.hash];
             return (
               <div
-                key={c.id}
-                onClick={() => toggle(c.id)}
+                key={c.hash}
+                onClick={() => toggle(c.hash)}
                 role="button"
                 tabIndex={0}
                 className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer select-none transition-shadow ${
@@ -76,19 +104,19 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-white/3 text-white/90">
-                      {c.type}
+                      commit
                     </span>
-                    <div className="text-sm font-medium truncate">{c.title}</div>
+                    <div className="text-sm font-medium truncate">{c.message.split('\n')[0]}</div>
                   </div>
-                  <div className="text-xs text-white/50 mt-1 truncate">{c.desc}</div>
+                  <div className="text-xs text-white/50 mt-1 truncate">{c.message}</div>
                 </div>
 
                 <div className="flex flex-col items-end text-xs text-white/50">
                   <div className="flex items-center gap-2">
                     <GitCommit size={14} />
-                    <span>{c.author}</span>
+                    <span>{c.author ?? "unknown"}</span>
                   </div>
-                  <div className="mt-1">{c.ts}</div>
+                  <div className="mt-1">{new Date(c.date).toLocaleString()}</div>
                 </div>
               </div>
             );

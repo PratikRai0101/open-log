@@ -59,13 +59,26 @@ export async function getUserRepos(): Promise<Repo[]> {
   return res.json();
 }
 
-export async function getCommits(owner: string, repo: string): Promise<Commit[]> {
+export type SimpleCommit = {
+  hash: string;
+  message: string;
+  date: string;
+  author: string | null;
+};
+
+/**
+ * Fetch commits for a repo (owner/repo or full name) and return a simplified shape.
+ */
+export async function getCommits(repoFullName: string): Promise<SimpleCommit[]> {
+  const [owner, repo] = repoFullName.split("/");
+  if (!owner || !repo) return [];
+
   const { getToken } = await auth();
   const token = await getToken({ template: "oauth_github" });
 
   if (!token) return [];
 
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=20`, {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=50`, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.v3+json",
@@ -75,5 +88,12 @@ export async function getCommits(owner: string, repo: string): Promise<Commit[]>
 
   if (!res.ok) return [];
 
-  return res.json();
+  const data: Commit[] = await res.json();
+
+  return data.map((c) => ({
+    hash: c.sha,
+    message: c.commit?.message || "",
+    date: c.commit?.author?.date || "",
+    author: c.commit?.author?.name || c.author?.login || null,
+  }));
 }
