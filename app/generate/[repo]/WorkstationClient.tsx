@@ -98,11 +98,10 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
 
       {/* Right Panel */}
       <section className="flex-1 relative h-full flex flex-col">
-        {/* Background Streaks */}
+        {/* Background Streaks (moved to globals.css where possible) */}
         <div className="absolute inset-0 pointer-events-none -z-10">
-          <div className="streak streak-1" />
-          <div className="streak streak-2" />
-          <div className="streak streak-3" />
+          <div className="bg-streak-1" />
+          <div className="bg-streak-2" />
         </div>
 
         {/* Top bar */}
@@ -178,113 +177,7 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
         </div>
       </section>
 
-      <style jsx>{`
-        .streak {
-          position: absolute;
-          filter: blur(36px) saturate(150%);
-          opacity: 0.9;
-          mix-blend-mode: screen;
-          pointer-events: none;
-          transform: scaleX(1.8);
-          border-radius: 50%;
-        }
-        .streak-1 {
-          width: 900px;
-          height: 420px;
-          left: -12%;
-          top: 6%;
-          background: radial-gradient(closest-side, rgba(255,79,79,0.28), transparent 35%);
-          animation: streak-move-1 48s linear infinite;
-        }
-        .streak-2 {
-          width: 700px;
-          height: 340px;
-          right: -8%;
-          top: 20%;
-          background: radial-gradient(closest-side, rgba(255,79,79,0.16), transparent 35%);
-          animation: streak-move-2 60s linear infinite reverse;
-        }
-        .streak-3 {
-          width: 500px;
-          height: 260px;
-          left: 20%;
-          bottom: -6%;
-          background: radial-gradient(closest-side, rgba(255,79,79,0.12), transparent 35%);
-          animation: streak-move-3 72s linear infinite;
-        }
-
-        @keyframes streak-move-1 {
-          0% { transform: translateX(0) scaleX(1.8) rotate(0deg); }
-          50% { transform: translateX(6%) scaleX(1.9) rotate(20deg); }
-          100% { transform: translateX(0) scaleX(1.8) rotate(0deg); }
-        }
-        @keyframes streak-move-2 {
-          0% { transform: translateX(0) scaleX(1.6) rotate(0deg); }
-          50% { transform: translateX(-6%) scaleX(1.7) rotate(-18deg); }
-          100% { transform: translateX(0) scaleX(1.6) rotate(0deg); }
-        }
-        @keyframes streak-move-3 {
-          0% { transform: translateY(0) scaleX(1.4) rotate(0deg); }
-          50% { transform: translateY(-4%) scaleX(1.5) rotate(12deg); }
-          100% { transform: translateY(0) scaleX(1.4) rotate(0deg); }
-        }
-
-        /* Neon checkbox */
-        .custom-check {
-          width: 18px;
-          height: 18px;
-          border-radius: 4px;
-          border: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.01);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: box-shadow .12s ease, background .12s ease, border-color .12s ease;
-        }
-        .custom-check.checked {
-          box-shadow: 0 0 10px rgba(255,79,79,0.95), inset 0 0 8px rgba(255,79,79,0.06);
-          border-color: rgba(255,79,79,0.3);
-          background: linear-gradient(180deg, rgba(255,79,79,0.12), rgba(255,79,79,0.05));
-        }
-
-        /* Typewriter cursor */
-        .typewriter-cursor {
-          display: inline-block;
-          width: 10px;
-          height: 18px;
-          background: #FF4F4F;
-          animation: type-blink 1s steps(1) infinite;
-          border-radius: 2px;
-        }
-        @keyframes type-blink {
-          0%, 49% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-
-        /* Publish button - anamorphic shine */
-        .publish-btn {
-          position: relative;
-          overflow: hidden;
-        }
-        .publish-btn::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          transform: translateX(-120%) skewX(-12deg);
-          background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-          z-index: 0;
-          pointer-events: none;
-          mix-blend-mode: overlay;
-          animation: anamorphic-shine 2.8s linear infinite;
-        }
-        .publish-btn > * { position: relative; z-index: 1; }
-
-        @keyframes anamorphic-shine {
-          0% { transform: translateX(-120%) skewX(-12deg); }
-          50% { transform: translateX(120%) skewX(-12deg); }
-          100% { transform: translateX(240%) skewX(-12deg); }
-        }
-      `}</style>
+        {/* local component styles remaining in css modules cause hydration issues; moved streaks to globals.css and kept small local styles as classes in globals when possible */}
     </div>
   );
 }

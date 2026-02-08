@@ -83,52 +83,7 @@ export default function Page({ params }: { params: { slug: string } }) {
         </section>
       </main>
 
-      <style jsx>{`
-        .bg-streak-1 {
-          width: 900px;
-          height: 420px;
-          left: -10%;
-          top: -6%;
-          background: radial-gradient(closest-side, rgba(255,79,79,0.16), transparent 40%);
-          transform: scaleX(1.6);
-          filter: blur(80px) saturate(120%);
-        }
-        .bg-streak-2 {
-          width: 700px;
-          height: 360px;
-          right: -8%;
-          bottom: -8%;
-          background: radial-gradient(closest-side, rgba(88,88,255,0.08), transparent 40%);
-          transform: scaleX(1.4);
-          filter: blur(72px) saturate(110%);
-        }
-
-        .timeline-mercury {
-          width: 2px;
-          left: 9rem; /* aligns with pl-32 content */
-          background: linear-gradient(to bottom, rgba(255,79,79,0.14), rgba(110,91,255,0.06));
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-        }
-
-        .crystal-card {
-          background: rgba(255,255,255,0.02);
-          backdrop-filter: blur(36px);
-          -webkit-backdrop-filter: blur(36px);
-          border: 1px solid rgba(255,255,255,0.1);
-          box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
-          border-radius: 12px;
-        }
-
-        /* make list bullets red (text-primary) */
-        .crystal-card ul {
-          list-style: disc;
-          padding-left: 1rem;
-          margin: 0;
-        }
-        .crystal-card ul li::marker {
-          color: var(--text-primary);
-        }
-      `}</style>
+      {/* Styles moved to global CSS (app/globals.css) to avoid styled-jsx in a server component */}
     </div>
   );
 }
