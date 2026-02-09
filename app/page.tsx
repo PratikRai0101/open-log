@@ -62,14 +62,14 @@ export default async function Dashboard() {
             Real-time Sync Active
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
+          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
             Command Center
           </h1>
         </div>
 
         {/* Search Bar */}
         <div className="mb-12 relative group max-w-xl mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-linear-to-r from-red-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative flex items-center bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 transition-all">
             <div className="pl-4 text-zinc-500">
               <Search size={20} />
@@ -99,7 +99,7 @@ export default async function Dashboard() {
                     // FIX 3: Ensure the key is unique and the link is correct
                     <Link href={`/generate/${repo.full_name}`} key={repo.id}>
                       <div className="group relative p-5 h-36 flex flex-col justify-between bg-white/2 hover:bg-white/4 border border-white/5 hover:border-white/10 rounded-xl transition-all cursor-pointer overflow-hidden backdrop-blur-sm">
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-linear-to-b from-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <div className="relative z-10">
                           <div className="flex justify-between items-start mb-2">
@@ -107,7 +107,7 @@ export default async function Dashboard() {
                               <div className="text-zinc-500 group-hover:text-[#FF4F4F] transition-colors">
                                 {repo.private ? <Lock size={16} /> : <Globe size={16} />}
                               </div>
-                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[160px]">{repo.name}</span>
+                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-40">{repo.name}</span>
                             </div>
                             {repo.language && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/5">{repo.language}</span>
