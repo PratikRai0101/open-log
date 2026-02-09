@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Check, 
   ArrowRight, 
@@ -28,10 +28,37 @@ interface WorkstationProps {
 }
 
 export default function WorkstationClient({ initialCommits = [], repo }: WorkstationProps) {
-  // State for selection and generation
+  // State for commits, selection and generation
+  const [commits, setCommits] = useState<SimpleCommit[]>(initialCommits);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Fetch commits from API when component mounts or repo changes
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (!repo) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/commits?repo=${encodeURIComponent(repo)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        if (!mounted) return;
+        // data may be an object { error } or an array
+        if (Array.isArray(data)) setCommits(data as SimpleCommit[]);
+        else setCommits([]);
+      } catch (err) {
+        console.error("Failed to load commits:", err);
+        if (mounted) setCommits([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
+  }, [repo]);
 
   // Toggle selection logic
   function toggleCommit(hash: string) {
@@ -46,10 +73,10 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
 
   // Select All / Deselect All
   function toggleAll() {
-    if (selected.size === initialCommits.length) {
+    if (selected.size === commits.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(initialCommits.map(c => c.hash)));
+      setSelected(new Set(commits.map((c) => c.hash)));
     }
   }
 
@@ -62,7 +89,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
 
     try {
       // Filter the actual commit objects based on selected hashes
-      const selectedCommits = initialCommits.filter(c => selected.has(c.hash));
+    const selectedCommits = commits.filter((c) => selected.has(c.hash));
 
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -99,7 +126,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
             </div>
           </div>
           <div className="text-xs text-zinc-500 font-mono">
-            {selected.size} / {initialCommits.length}
+            {selected.size} / {commits.length}
           </div>
         </div>
 
@@ -109,55 +136,63 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
             onClick={toggleAll}
             className="text-[11px] font-medium text-zinc-500 hover:text-white transition-colors uppercase tracking-wide"
           >
-            {selected.size === initialCommits.length ? "Deselect All" : "Select All"}
+            {selected.size === commits.length ? "Deselect All" : "Select All"}
           </button>
         </div>
 
         {/* Commit List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-          {initialCommits.map((c) => {
-            const isSelected = selected.has(c.hash);
-            return (
-              <div
-                key={c.hash}
-                onClick={() => toggleCommit(c.hash)}
-                className={`group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
-                  isSelected 
-                    ? "bg-[#FF4F4F]/5 border-[#FF4F4F]/20" 
-                    : "bg-transparent border-transparent hover:bg-white/3"
-                }`}
-              >
-                {/* Checkbox */}
-                <div className={`mt-0.5 size-4 rounded border flex items-center justify-center transition-colors ${
-                  isSelected ? "bg-[#FF4F4F] border-[#FF4F4F]" : "border-white/10 group-hover:border-white/30"
-                }`}>
-                  {isSelected && <Check size={12} className="text-white stroke-3" />}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                      c.type === 'feat' ? 'bg-emerald-500/10 text-emerald-500' :
-                      c.type === 'fix' ? 'bg-amber-500/10 text-amber-500' :
-                      'bg-zinc-500/10 text-zinc-500'
+          {loading ? (
+            <div className="p-4 text-zinc-500 text-sm">Loading commits…</div>
+          ) : commits.length === 0 ? (
+            <div className="p-4 text-zinc-500 text-sm">No commits found for this repository.</div>
+          ) : (
+            <>
+              {commits.map((c) => {
+                const isSelected = selected.has(c.hash);
+                return (
+                  <div
+                    key={c.hash}
+                    onClick={() => toggleCommit(c.hash)}
+                    className={`group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                      isSelected
+                        ? "bg-[#FF4F4F]/5 border-[#FF4F4F]/20"
+                        : "bg-transparent border-transparent hover:bg-white/3"
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <div className={`mt-0.5 size-4 rounded border flex items-center justify-center transition-colors ${
+                      isSelected ? "bg-[#FF4F4F] border-[#FF4F4F]" : "border-white/10 group-hover:border-white/30"
                     }`}>
-                      {c.type}
-                    </span>
-                    <span className="text-[10px] text-zinc-600 font-mono">{c.hash.substring(0,6)}</span>
+                      {isSelected && <Check size={12} className="text-white stroke-3" />}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                          c.type === 'feat' ? 'bg-emerald-500/10 text-emerald-500' :
+                          c.type === 'fix' ? 'bg-amber-500/10 text-amber-500' :
+                          'bg-zinc-500/10 text-zinc-500'
+                        }`}>
+                          {c.type}
+                        </span>
+                        <span className="text-[10px] text-zinc-600 font-mono">{c.hash.substring(0,6)}</span>
+                      </div>
+                      <p className={`text-sm leading-tight truncate ${isSelected ? "text-zinc-100" : "text-zinc-400 group-hover:text-zinc-300"}`}>
+                        {c.message}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5 text-[11px] text-zinc-600">
+                        <span className="flex items-center gap-1"><GitCommit size={10}/> {c.author_name}</span>
+                        <span>•</span>
+                        <span>{c.date}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className={`text-sm leading-tight truncate ${isSelected ? "text-zinc-100" : "text-zinc-400 group-hover:text-zinc-300"}`}>
-                    {c.message}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1.5 text-[11px] text-zinc-600">
-                    <span className="flex items-center gap-1"><GitCommit size={10}/> {c.author_name}</span>
-                    <span>•</span>
-                    <span>{c.date}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </>
+          )}
         </div>
       </aside>
 
