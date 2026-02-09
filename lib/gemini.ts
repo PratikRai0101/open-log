@@ -27,4 +27,4 @@ export async function listModels() {
 }
 
 // Default model if nothing else is provided via env
-export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODEL || "gemini-1.5-flash";
+export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODEL || "gemini-2.5-flash";
