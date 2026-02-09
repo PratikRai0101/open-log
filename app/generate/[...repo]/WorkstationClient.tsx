@@ -116,10 +116,34 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
       if (!reader) throw new Error("No readable stream from server");
 
       const decoder = new TextDecoder();
+      // Read the stream iteratively; handle embedded JSON control lines for progress.
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
+        // The server prefixes progress/control JSON lines with a marker `~~JSON~~`.
+        if (chunk.startsWith("~~JSON~~")) {
+          // Might contain multiple lines; process each
+          const lines = chunk.split(/\n+/).filter(Boolean);
+          for (const ln of lines) {
+            if (!ln.startsWith("~~JSON~~")) continue;
+            try {
+              const obj = JSON.parse(ln.replace(/^~~JSON~~/, ""));
+              if (obj.meta) {
+                // we could use meta.totalChunks to show progress; ignore for now
+              }
+              if (obj.chunkIndex !== undefined) {
+                // simple progress: append a small placeholder while we wait for content
+                setGenerated((g) => (g || "") + `\n\n<!-- Processing chunk ${obj.chunkIndex + 1}/${obj.chunkLines} -->\n`);
+              }
+            } catch (e) {
+              // ignore malformed control JSON
+            }
+          }
+          continue;
+        }
+
+        // Normal content - append immediately for live streaming
         partial += chunk;
         setGenerated(partial);
       }

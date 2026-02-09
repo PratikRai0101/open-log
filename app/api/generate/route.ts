@@ -71,7 +71,13 @@ ${chunkLines.join("\n")}
     const readable = new ReadableStream({
       async start(controller) {
         try {
+          // Send a small meta header so the client can estimate progress.
+          const totalChunks = allChunks.length;
+          controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: commits.length, totalChunks } }) + "\n"));
           for (const chunkLines of allChunks) {
+            const chunkIndex = allChunks.indexOf(chunkLines);
+            // Notify client a new chunk is about to stream
+            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkIndex, chunkLines: chunkLines.length }) + "\n"));
             const p = basePrompt(chunkLines);
             // Pass generationConfig (part of the request params) with temperature and max tokens
             // Pass the prompt as a string (the SDK accepts string or array of parts)
