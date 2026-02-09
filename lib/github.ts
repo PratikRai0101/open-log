@@ -38,7 +38,17 @@ export type ReposResult = { repos: Repo[]; hasToken: boolean };
 
 export async function getUserRepos(): Promise<ReposResult> {
   const { getToken } = await auth();
-  const token = await getToken({ template: "oauth_github" });
+  const template = process.env.GITHUB_OAUTH_TEMPLATE ?? "oauth_github";
+
+  let token: string | null = null;
+  try {
+    token = await getToken({ template });
+  } catch (err: any) {
+    // Clerk returns a 404/Not Found when the template doesn't exist.
+    console.error(`Error while fetching OAuth token from Clerk (template=${template}):`, err?.message ?? err);
+    console.error(`Hint: Ensure an OAuth template with the slug '${template}' exists in your Clerk dashboard, and that GitHub is configured as a provider for it.`);
+    return { repos: [], hasToken: false };
+  }
 
   if (!token) {
     console.error("No GitHub token found. User might not be logged in with GitHub.");

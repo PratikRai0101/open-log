@@ -3,6 +3,7 @@ import { getUserRepos, Repo as GHRepo } from "../lib/github";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import LinkGitHub from "../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 
 export default async function Dashboard() {
@@ -121,9 +122,7 @@ export default async function Dashboard() {
                   <Lock className="w-8 h-8 text-zinc-600 mb-3" />
                   <h3 className="text-zinc-200 font-medium mb-1">Connect GitHub</h3>
                   <p className="text-zinc-500 text-sm mb-4">Connect your GitHub account to view and edit repositories in ShipLog.</p>
-                  <SignInButton mode="modal">
-                    <button className="bg-[#FF4F4F] hover:bg-red-600 text-white text-xs font-medium px-4 py-2 rounded shadow-[0_0_15px_rgba(255,79,79,0.3)] transition-all">Connect GitHub</button>
-                  </SignInButton>
+                    <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
                 </div>
               )}
             </SignedIn>
@@ -133,9 +132,7 @@ export default async function Dashboard() {
                 <Lock className="w-8 h-8 text-zinc-600 mb-3" />
                 <h3 className="text-zinc-200 font-medium mb-1">Authentication Required</h3>
                 <p className="text-zinc-500 text-sm mb-4">Sign in to view your GitHub repositories.</p>
-                <SignInButton mode="modal">
-                  <button className="bg-[#FF4F4F] hover:bg-red-600 text-white text-xs font-medium px-4 py-2 rounded shadow-[0_0_15px_rgba(255,79,79,0.3)] transition-all">Connect GitHub</button>
-                </SignInButton>
+                <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
               </div>
             </SignedOut>
           </div>
