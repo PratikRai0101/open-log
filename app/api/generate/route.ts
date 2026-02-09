@@ -30,14 +30,36 @@ Raw Commits:
 ${commitList}
 `;
 
-    // Generate content
-    // The SDK accepts a string or Parts array for contents — pass the prompt string.
-    const result = await model.generateContent(prompt as any);
-    // result.response is the enhanced response with helper methods (text)
-    const { response } = result as any;
-    const text = response.text();
+    // Streaming generation: use the SDK streaming API and proxy chunks to the
+    // client as a plain text stream. The client will append chunks as they
+    // arrive to render partial output.
+    const streamResult = await model.generateContentStream(prompt as any);
 
-    return NextResponse.json({ changelog: text });
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of streamResult.stream) {
+            try {
+              const text = (chunk as any).text();
+              if (text) {
+                // Queue UTF-8 chunk; add a separator so client can split if needed
+                controller.enqueue(new TextEncoder().encode(text + "\n"));
+              }
+            } catch (e) {
+              // If a chunk can't produce text, skip it
+              console.error("Error extracting chunk text:", e);
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err as Error);
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (error) {
     console.error("AI Generation Failed:", error);
     return NextResponse.json({ error: "Generation failed" }, { status: 500 });

@@ -86,21 +86,33 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
     
     setIsGenerating(true);
     setGenerated(""); // Clear previous
+    // Prepare to stream partial output
+    let partial = "";
 
     try {
       // Filter the actual commit objects based on selected hashes
-    const selectedCommits = commits.filter((c) => selected.has(c.hash));
+      const selectedCommits = commits.filter((c) => selected.has(c.hash));
 
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo, commits: selectedCommits }),
+        body: JSON.stringify({ repo, commits: selectedCommits }),
       });
 
       if (!res.ok) throw new Error(await res.text());
 
-      const data = await res.json();
-      setGenerated(data.changelog);
+      // Stream response body incrementally
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No readable stream from server");
+
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        partial += chunk;
+        setGenerated(partial);
+      }
     } catch (err) {
       console.error(err);
       setGenerated("## Error\nFailed to generate changelog. Please check console.");
