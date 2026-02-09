@@ -70,6 +70,50 @@ ${chunkLines.join("\n")}
       }
     }
 
+    // Helper: post-process merged chunk outputs to dedupe bullets per section
+    function postProcessMerge(text: string) {
+      // Split into sections by heading lines (## ...)
+      const lines = text.split(/\r?\n/);
+      const sections: Record<string, string[]> = {};
+      let current = "__intro__";
+      sections[current] = [];
+      for (const l of lines) {
+        const m = l.match(/^##\s*(.*)/);
+        if (m) {
+          current = m[1].trim() || "__misc__";
+          if (!sections[current]) sections[current] = [];
+        } else {
+          if (l.trim()) sections[current].push(l);
+        }
+      }
+      // Dedupe bullets inside each section
+      const orderedKeys = Object.keys(sections);
+      const outSections: string[] = [];
+      for (const key of orderedKeys) {
+        const items = sections[key];
+        if (!items.length) continue;
+        // If this is an intro (no heading), keep as-is
+        if (key === "__intro__") {
+          outSections.push(items.join("\n"));
+          continue;
+        }
+        // Deduplicate lines
+        const seen = new Set<string>();
+        const filtered = [] as string[];
+        for (const it of items) {
+          const trimmed = it.trim();
+          if (!trimmed) continue;
+          if (seen.has(trimmed)) continue;
+          seen.add(trimmed);
+          filtered.push(trimmed);
+        }
+        if (filtered.length === 0) continue;
+        outSections.push(`## ${key}`);
+        outSections.push(...filtered);
+      }
+      return outSections.join("\n\n");
+    }
+
     // Create a combined ReadableStream that sequentially streams each chunk's
     // generated text.
     const readable = new ReadableStream({
@@ -78,10 +122,8 @@ ${chunkLines.join("\n")}
           // Send a small meta header so the client can estimate progress.
           const totalChunks = allChunks.length;
           controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: commits.length, totalChunks } }) + "\n"));
-          for (const chunkLines of allChunks) {
-            const chunkIndex = allChunks.indexOf(chunkLines);
-            // Notify client a new chunk is about to stream
-            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkIndex, chunkLines: chunkLines.length }) + "\n"));
+          const chunkOutputs: string[] = [];
+          for (const [chunkIndex, chunkLines] of allChunks.entries()) {
             const p = basePrompt(chunkLines);
             // Pass generationConfig (part of the request params) with temperature and max tokens
             // Pass the prompt as a string (the SDK accepts string or array of parts)
@@ -92,18 +134,41 @@ ${chunkLines.join("\n")}
                 maxOutputTokens: Number(process.env.GENERATION_MAX_TOKENS) || 1024,
               },
             } as any);
+
+            // Announce upcoming chunk to client
+            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkIndex, chunkLines: chunkLines.length }) + "\n"));
+
+            // Collect chunk output while streaming it to client
+            let currentChunkText = "";
             for await (const part of streamResult.stream) {
               try {
                 const text = (part as any).text();
-                if (text) controller.enqueue(new TextEncoder().encode(text));
+                if (text) {
+                  currentChunkText += text;
+                  controller.enqueue(new TextEncoder().encode(text));
+                }
               } catch (e) {
                 console.error("chunk parse error:", e);
               }
             }
+
+            // push collected chunk output for post-processing
+            chunkOutputs.push(currentChunkText);
+
             // Notify client that this chunk finished
-            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkDone: allChunks.indexOf(chunkLines) }) + "\n"));
+            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkDone: chunkIndex }) + "\n"));
             // Small separator between chunk outputs
             controller.enqueue(new TextEncoder().encode("\n\n"));
+          }
+
+          // After all chunks complete, post-process merged output to dedupe and tidy sections
+          try {
+            const merged = postProcessMerge(chunkOutputs.join("\n\n"));
+            // Send final marker then the merged content so client can replace prior content
+            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
+            controller.enqueue(new TextEncoder().encode(merged));
+          } catch (e) {
+            console.error("Post-process merge failed:", e);
           }
           controller.close();
         } catch (err) {
