@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { model } from "../../../../lib/gemini";
+import { model } from "../../../lib/gemini";
 
 export async function POST(req: Request) {
   try {
@@ -28,10 +28,11 @@ ${commitList}
 `;
 
     // Generate content
-    const result = await model.generateContent({ prompt });
-    // The library returns a response/stream; call .response then text()
-    const response = await result.response;
-    const text = await response.text();
+    // The SDK accepts a string or Parts array for contents — pass the prompt string.
+    const result = await model.generateContent(prompt as any);
+    // result.response is the enhanced response with helper methods (text)
+    const { response } = result as any;
+    const text = response.text();
 
     return NextResponse.json({ changelog: text });
   } catch (error) {
