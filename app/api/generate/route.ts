@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { genAI, DEFAULT_MODEL } from "../../../lib/gemini";
+import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE } from "../../../lib/gemini";
+import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
 
 // Resolve the model at runtime so developers can override with env or available models
 const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
@@ -12,17 +13,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid commits data" }, { status: 400 });
     }
 
-    // Construct the prompt
-    // Prepare commit list lines (include a type hint if present in the object)
-    const lines = commits.map((c: any) => {
-      const type = c.type ? `${c.type.toLowerCase()}: ` : "";
-      return `- ${type}${c.message} — ${c.author_name || "unknown"}`;
-    });
+    // Group commits semantically by type to let the model focus per-section.
+    const groups = groupCommitsByType(commits as any[]);
 
-    // Chunk commits to avoid token limits; we'll summarize each chunk and
-    // then concatenate results.
-    const { DEFAULT_CHUNK_SIZE } = await import("../../../lib/gemini");
-    const chunkSize = Number(process.env.COMMIT_CHUNK_SIZE) || DEFAULT_CHUNK_SIZE;
+    // Respect env override to send everything as one prompt when desired
+    const disableChunking = (process.env.DISABLE_CHUNKING || "").toLowerCase() === "true";
+    const chunkSize = disableChunking ? -1 : Number(process.env.COMMIT_CHUNK_SIZE) || DEFAULT_CHUNK_SIZE;
 
     // Build a strong prompt template with examples and clear rules.
     const basePrompt = (chunkLines: string[]) => `
@@ -56,9 +52,18 @@ ${chunkLines.join("\n")}
 
     // For larger commit sets, chunk the commits and generate summaries for
     // each chunk, then stream the concatenated output back to the client.
+    // Build per-group chunk lists (array of arrays of lines). If chunkSize <= 0
+    // we put the entire group's lines into a single chunk.
     const allChunks: string[][] = [];
-    for (let i = 0; i < lines.length; i += chunkSize) {
-      allChunks.push(lines.slice(i, i + chunkSize));
+    for (const [type, group] of Object.entries(groups)) {
+      if (!group.length) continue;
+      const lines = group.map((c) => formatCommitLine(c as any));
+      if (chunkSize <= 0) {
+        allChunks.push(lines);
+      } else {
+        const parts = chunkArray(lines, chunkSize);
+        for (const p of parts) allChunks.push(p);
+      }
     }
 
     // Create a combined ReadableStream that sequentially streams each chunk's
