@@ -7,9 +7,24 @@ if (!apiKey) {
   console.error("Missing GOOGLE_API_KEY in environment variables");
 }
 
-const genAI = new GoogleGenerativeAI(apiKey || "");
+export const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// Use a model supported by the v1beta API. `text-bison-001` is broadly available
-// and works well for concise text generation. If you have access to a Gemini
-// model in your Google Cloud project, replace this value with the model name.
-export const model = genAI.getGenerativeModel({ model: "text-bison-001" });
+// Helper: List models directly from the REST endpoint to pick a supported one.
+export async function listModels() {
+  if (!apiKey) return [];
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models", {
+      headers: { "x-goog-api-key": apiKey },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    // Expect { models: [ { name: 'models/xyz', ... } ] }
+    return Array.isArray(data.models) ? data.models.map((m: any) => m.name || m) : [];
+  } catch (err) {
+    console.error("Failed to list models:", err);
+    return [];
+  }
+}
+
+// Default model if nothing else is provided via env
+export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODEL || "gemini-1.5-flash";

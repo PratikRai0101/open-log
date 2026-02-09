@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { model } from "../../../lib/gemini";
+import { genAI, DEFAULT_MODEL } from "../../../lib/gemini";
+
+// Resolve the model at runtime so developers can override with env or available models
+const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
 
 export async function POST(req: Request) {
   try {
