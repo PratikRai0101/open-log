@@ -27,4 +27,8 @@ export async function listModels() {
 }
 
 // Default model if nothing else is provided via env
-export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODEL || "gemini-2.5-flash";
+export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODEL || "gemini-2.5";
+
+// Default commit chunk size to avoid hitting token limits. Can be overridden
+// via COMMIT_CHUNK_SIZE env var.
+export const DEFAULT_CHUNK_SIZE = Number(process.env.COMMIT_CHUNK_SIZE) || 20;
