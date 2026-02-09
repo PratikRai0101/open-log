@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Check, 
   ArrowRight, 
@@ -34,6 +34,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
   const [generated, setGenerated] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Fetch commits from API when component mounts or repo changes
   useEffect(() => {
@@ -93,10 +94,15 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
       // Filter the actual commit objects based on selected hashes
       const selectedCommits = commits.filter((c) => selected.has(c.hash));
 
+      // Create an AbortController so the user can cancel the request
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo, commits: selectedCommits }),
+        signal: controller.signal,
       });
 
       if (!res.ok) throw new Error(await res.text());
@@ -113,10 +119,26 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         partial += chunk;
         setGenerated(partial);
       }
+      // Clear controller after successful finish
+      abortControllerRef.current = null;
     } catch (err) {
-      console.error(err);
-      setGenerated("## Error\nFailed to generate changelog. Please check console.");
+      // If aborted by user, show a short notice but keep partial content
+      if ((err as any)?.name === "AbortError") {
+        console.log("Generation aborted by user");
+      } else {
+        console.error(err);
+        setGenerated("## Error\nFailed to generate changelog. Please check console.");
+      }
     } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  function handleCancel() {
+    const controller = abortControllerRef.current;
+    if (controller) {
+      controller.abort();
+      abortControllerRef.current = null;
       setIsGenerating(false);
     }
   }
@@ -243,6 +265,14 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
               </>
             )}
           </button>
+          {isGenerating && (
+            <button
+              onClick={handleCancel}
+              className="ml-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/5 text-zinc-200 hover:bg-white/7"
+            >
+              Cancel
+            </button>
+          )}
         </div>
 
         {/* Content Area */}
