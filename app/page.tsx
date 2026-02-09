@@ -26,7 +26,7 @@ export default async function Dashboard() {
             <div className="size-8 flex items-center justify-center text-[#FF4F4F] bg-white/5 rounded-lg border border-white/5 shadow-[0_0_15px_rgba(255,79,79,0.2)]">
               <Terminal size={18} />
             </div>
-            <span className="font-semibold text-sm tracking-tight text-white">ShipLog</span>
+            <span className="font-semibold text-sm tracking-tight text-white">OpenLog</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -142,7 +142,7 @@ export default async function Dashboard() {
                 <div className="col-span-2 p-8 border border-white/10 bg-white/2 rounded-xl flex flex-col items-center justify-center text-center">
                   <Lock className="w-8 h-8 text-zinc-600 mb-3" />
                   <h3 className="text-zinc-200 font-medium mb-1">Connect GitHub</h3>
-                  <p className="text-zinc-500 text-sm mb-4">Connect your GitHub account to view and edit repositories in ShipLog.</p>
+                  <p className="text-zinc-500 text-sm mb-4">Connect your GitHub account to view and edit repositories in OpenLog.</p>
                     <LinkGitHub />
                 </div>
               )}

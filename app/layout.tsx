@@ -37,7 +37,7 @@ export default function RootLayout({
           <div className="anamorphic-flare-1" aria-hidden />
           <div className="anamorphic-flare-2" aria-hidden />
 
-          {/* Global header removed (was blocking content on all pages) */}
+          {/* App name and metadata updated to OpenLog */}
 
           {children}
         </ClerkProvider>
