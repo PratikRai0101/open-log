@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Check, ArrowRight, GitCommit } from "lucide-react";
-import { getCommits, SimpleCommit } from "../../../lib/github";
 
 type Commit = {
   id: string;
@@ -29,10 +28,18 @@ const MOCK_COMMITS: Commit[] = [
   { id: "c6", type: "fix", title: "Handle null PR titles", desc: "Prevent crash when PR title missing", author: "frank", ts: "4d" },
 ];
 
+export type SimpleCommit = {
+  hash: string;
+  message: string;
+  date: string;
+  author: string | null;
+};
+
 export default function WorkstationClient({ repo }: { repo?: string }) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [commits, setCommits] = useState<SimpleCommit[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generated, setGenerated] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -40,7 +47,10 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
       if (!repo) return;
       setLoading(true);
       try {
-        const c = await getCommits(repo);
+        const url = `/api/commits?repo=${encodeURIComponent(repo)}`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(await r.text());
+        const c: SimpleCommit[] = await r.json();
         if (mounted) setCommits(c.slice(0, 50));
       } catch (e) {
         console.error(e);
@@ -58,10 +68,36 @@ export default function WorkstationClient({ repo }: { repo?: string }) {
     setSelected((s) => ({ ...s, [id]: !s[id] }));
   }
 
-  function publish() {
-    const chosen = Object.keys(selected).filter((k) => selected[k]);
-    // placeholder: integrate server action later
-    alert(`Publishing ${chosen.length} commits:\n${chosen.join(", ")}`);
+  async function publish() {
+    const chosenHashes = Object.keys(selected).filter((k) => selected[k]);
+    if (!repo) return;
+    const chosen = (commits || []).filter((c) => chosenHashes.includes(c.hash));
+    if (chosen.length === 0) {
+      alert("Select at least one commit to generate a changelog.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo, commits: chosen }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Generation failed");
+      }
+
+      const data = await res.json();
+      setGenerated(data.changelog || "");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate changelog. Check the server logs.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

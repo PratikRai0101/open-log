@@ -2,7 +2,7 @@ import React from "react";
 import { getUserRepos, Repo as GHRepo } from "../lib/github";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import LinkGitHub from "../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 
@@ -12,10 +12,14 @@ export default async function Dashboard() {
   const hasToken = result.hasToken;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white relative overflow-hidden">
+    // FIX 1: overflow-x-hidden prevents the horizontal scrollbar caused by the blur effects
+    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white relative overflow-x-hidden">
+      
+      {/* Background Blobs - kept pointer-events-none so they don't block clicks */}
       <div className="fixed top-[-10%] left-[20%] w-[120vw] h-125 bg-red-500/10 blur-[120px] rotate-[-5deg] pointer-events-none" />
       <div className="fixed top-[30%] right-[-20%] w-screen h-100 bg-indigo-500/10 blur-[120px] rotate-[5deg] pointer-events-none" />
 
+      {/* Header */}
       <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#050505]/60 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -27,11 +31,12 @@ export default async function Dashboard() {
 
           <div className="flex items-center gap-4">
             <SignedOut>
-              <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
+              <LinkGitHub />
             </SignedOut>
             <SignedIn>
               <div className="flex items-center gap-3">
-                <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
+                {/* FIX 2: Only show Connect Button if token is MISSING */}
+                {!hasToken && <LinkGitHub />}
                 <UserButton
                   appearance={{
                     elements: {
@@ -45,8 +50,10 @@ export default async function Dashboard() {
         </div>
       </header>
 
+      {/* Main Content - Added extra padding-top to ensure nothing is hidden behind header */}
       <main className="max-w-3xl mx-auto px-6 pt-32 pb-20 relative z-10">
         <div className="text-center mb-12">
+          {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/2 border border-white/5 text-[11px] font-medium text-zinc-400 mb-6 backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF4F4F] opacity-75"></span>
@@ -54,22 +61,31 @@ export default async function Dashboard() {
             </span>
             Real-time Sync Active
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">Command Center</h1>
+          
+          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
+            Command Center
+          </h1>
         </div>
 
+        {/* Search Bar */}
         <div className="mb-12 relative group max-w-xl mx-auto">
-          <div className="absolute inset-0 bg-linear-to-r from-red-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative flex items-center bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 transition-all">
             <div className="pl-4 text-zinc-500">
               <Search size={20} />
             </div>
-            <input type="text" placeholder="Search repositories..." className="w-full bg-transparent border-none py-4 pl-3 pr-4 text-zinc-200 placeholder-zinc-600 focus:ring-0 text-sm" />
+            <input 
+              type="text" 
+              placeholder="Search repositories..." 
+              className="w-full bg-transparent border-none py-4 pl-3 pr-4 text-zinc-200 placeholder-zinc-600 focus:ring-0 text-sm outline-none" 
+            />
             <div className="pr-4">
               <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-2 font-mono text-[10px] text-zinc-500">⌘K</kbd>
             </div>
           </div>
         </div>
 
+        {/* Repository Grid */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Your Repositories</h2>
@@ -80,17 +96,18 @@ export default async function Dashboard() {
               {hasToken ? (
                 repos.length > 0 ? (
                   repos.map((repo) => (
+                    // FIX 3: Ensure the key is unique and the link is correct
                     <Link href={`/generate/${repo.full_name}`} key={repo.id}>
-                      <div className="group relative p-5 h-36 flex flex-col justify-between bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-white/10 rounded-xl transition-all cursor-pointer overflow-hidden backdrop-blur-sm">
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="group relative p-5 h-36 flex flex-col justify-between bg-white/2 hover:bg-white/4 border border-white/5 hover:border-white/10 rounded-xl transition-all cursor-pointer overflow-hidden backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <div className="relative z-10">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-3">
                               <div className="text-zinc-500 group-hover:text-[#FF4F4F] transition-colors">
-                                {repo.private ? <Lock size={18} /> : <Globe size={18} />}
+                                {repo.private ? <Lock size={16} /> : <Globe size={16} />}
                               </div>
-                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[140px]">{repo.name}</span>
+                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate max-w-[160px]">{repo.name}</span>
                             </div>
                             {repo.language && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-zinc-500 border border-white/5">{repo.language}</span>
@@ -104,7 +121,7 @@ export default async function Dashboard() {
                             <span className={`size-1.5 rounded-full ${repo.private ? "bg-amber-500" : "bg-emerald-500"} shadow-[0_0_8px_currentColor]`} />
                             {formatDistanceToNow(new Date(repo.updated_at))} ago
                           </div>
-                          <div className="opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 text-zinc-400">
+                          <div className="opacity-0 group-hover:opacity-100 transform -translate-x-2.5 group-hover:translate-x-0 transition-all duration-300 text-zinc-400">
                             <ArrowRight size={16} />
                           </div>
                         </div>
@@ -117,23 +134,14 @@ export default async function Dashboard() {
                   </div>
                 )
               ) : (
-                <div className="col-span-2 p-8 border border-white/10 bg-white/[0.02] rounded-xl flex flex-col items-center justify-center text-center">
+                <div className="col-span-2 p-8 border border-white/10 bg-white/2 rounded-xl flex flex-col items-center justify-center text-center">
                   <Lock className="w-8 h-8 text-zinc-600 mb-3" />
                   <h3 className="text-zinc-200 font-medium mb-1">Connect GitHub</h3>
                   <p className="text-zinc-500 text-sm mb-4">Connect your GitHub account to view and edit repositories in ShipLog.</p>
-                    <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
+                    <LinkGitHub />
                 </div>
               )}
             </SignedIn>
-
-            <SignedOut>
-              <div className="col-span-2 p-8 border border-white/10 bg-white/[0.02] rounded-xl flex flex-col items-center justify-center text-center">
-                <Lock className="w-8 h-8 text-zinc-600 mb-3" />
-                <h3 className="text-zinc-200 font-medium mb-1">Authentication Required</h3>
-                <p className="text-zinc-500 text-sm mb-4">Sign in to view your GitHub repositories.</p>
-                <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
-              </div>
-            </SignedOut>
           </div>
         </div>
       </main>

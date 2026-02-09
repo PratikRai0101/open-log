@@ -1,5 +1,9 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import 'server-only';
+import { auth } from "@clerk/nextjs/server";
+import { createClerkClient } from "@clerk/nextjs/server";
 
+// Initialize the backend client using the secret key (server-only)
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 // --- Types ---
 export interface Repo {
   id: number;
@@ -45,11 +49,9 @@ export async function getUserRepos(): Promise<ReposResult> {
 
   // 1. Get the raw token directly from Clerk's backend API
   // We use 'oauth_github' which is the standard provider ID for GitHub
-  const client = await clerkClient();
-  
   let token: string | undefined;
   try {
-    const tokenResponse = await client.users.getUserOauthAccessToken(userId, 'oauth_github');
+    const tokenResponse = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_github');
     token = tokenResponse.data[0]?.token;
   } catch (err) {
     console.error("Error fetching GitHub token:", err);
@@ -96,11 +98,9 @@ export async function getCommits(repoFullName: string): Promise<SimpleCommit[]> 
   if (!userId) return [];
 
   // FIX: Use clerkClient to get the real GitHub token (starts with gho_)
-  const client = await clerkClient();
   let token: string | undefined;
-  
   try {
-    const tokenResponse = await client.users.getUserOauthAccessToken(userId, 'oauth_github');
+    const tokenResponse = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_github');
     token = tokenResponse.data[0]?.token;
   } catch (err) {
     console.error("Error fetching token for commits:", err);

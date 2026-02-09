@@ -1,0 +1,90 @@
+#!/bin/sh
+# Auto-generate a concise commit message from staged changes.
+# Install by running:
+#   git config core.hooksPath .githooks
+#   chmod +x .githooks/prepare-commit-msg
+
+# Arguments: $1 = path to the temporary commit message file
+#            $2 = commit source (message, template, merge, squash, commit)
+
+MSG_FILE="$1"
+SOURCE="$2"
+
+# Don't run for merges or squash commits or when message already exists
+case "$SOURCE" in
+  merge|squash)
+    exit 0
+    ;;
+esac
+
+if [ -s "$MSG_FILE" ]; then
+  # message already exists (user supplied or editor opened) — don't overwrite
+  exit 0
+fi
+
+# Get staged files (name-status shows A/M/D/R/C)
+STAGED=$(git diff --cached --name-status 2>/dev/null)
+if [ -z "$STAGED" ]; then
+  # nothing staged
+  exit 0
+fi
+
+# Parse first staged entry to build a short subject
+first_line=$(echo "$STAGED" | sed -n '1p')
+status=$(echo "$first_line" | awk '{print $1}')
+first_file=$(echo "$first_line" | awk '{print $2}')
+
+# Lowercase path for easy matching
+lower=$(echo "$first_file" | tr '[:upper:]' '[:lower:]')
+
+# Choose a conventional commit type based on heuristics
+type="chore"
+case "$lower" in
+  *package.json*|*package-lock.json*|*pnpm-lock.yaml*|*yarn.lock*) type="chore";;
+  *.md|docs/*) type="docs";;
+  *test*|*__tests__*|*.spec.*) type="test";;
+  *.css|*.scss|*.less) type="style";;
+  .github/*|ci/*) type="ci";;
+  *.png|*.jpg|*.jpeg|*.svg|*.gif) type="chore";;
+  src/*|app/*|lib/*|*.js|*.ts|*.tsx|*.jsx) 
+    if [ "$status" = "A" ]; then type="feat"; else type="fix"; fi;;
+esac
+
+# Derive scope from dirname of first file
+scope=$(dirname "$first_file")
+if [ "$scope" = "." ] || [ -z "$scope" ]; then
+  scope=""
+else
+  # take top-level directory as scope
+  scope=$(echo "$scope" | cut -d/ -f1)
+fi
+
+# Verb from status
+verb="change"
+case "$status" in
+  A) verb="add";;
+  M) verb="update";;
+  D) verb="remove";;
+  R) verb="rename";;
+  C) verb="copy";;
+esac
+
+short_file=$(basename "$first_file")
+if [ -n "$scope" ]; then
+  header="$type($scope): $verb $short_file"
+else
+  header="$type: $verb $short_file"
+fi
+
+# Build a short list of staged changes for the body
+body=$(echo "$STAGED" | awk '{print "- " $2 " (" $1 ")"}' | sed -n '1,20p')
+
+cat > "$MSG_FILE" <<EOF
+$header
+
+$body
+
+# NOTE: This message was automatically generated from staged files. Edit as needed.
+EOF
+
+exit 0
