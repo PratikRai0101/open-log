@@ -391,3 +391,25 @@ body{
 .crystal-card ul li::marker {
   color: var(--text-primary);
 }
+
+/* BlockNote / Mantine editor theming to match Midnight theme */
+.blocknote-root, .blocknote-wrapper, .bn-root, .bn-view, .bn-editor, .blocknote-editor {
+  background: transparent !important;
+  color: inherit !important;
+}
+.blocknote-root * { color: inherit !important; }
+.blocknote-root .bn-editor__content, .blocknote-root .bn-view__content {
+  background: transparent !important;
+  color: inherit !important;
+}
+.blocknote-root .bn-toolbar, .blocknote-root .mantine-Menu, .blocknote-root .mantine-Tooltip {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: inherit !important;
+}
+
+/* Make content area match app padding / radius */
+.blocknote-root .bn-view__content, .blocknote-root .bn-editor__content {
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+}

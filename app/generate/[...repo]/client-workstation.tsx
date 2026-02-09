@@ -61,6 +61,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   async function handleGenerate() {
     if (selected.size === 0) return;
     setIsGenerating(true);
+    setTotalChunks(0);
+    setCompletedChunks(0);
+    setCurrentChunk(null);
+    setGenerated("");
     setViewMode("preview"); // Switch to preview to see the magic
 
     // Setup streaming request so we can show progressive output and chunk progress
@@ -137,6 +141,15 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       setIsGenerating(false);
       abortControllerRef.current = null;
     }
+  }
+
+  function handleCancel() {
+    const controller = abortControllerRef.current;
+    if (controller) {
+      controller.abort();
+      abortControllerRef.current = null;
+    }
+    setIsGenerating(false);
   }
 
   // Publish Logic (Updated)
@@ -236,7 +249,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
              </button>
           </div>
 
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             {/* Version Input */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg focus-within:border-white/20 transition-colors">
                 <span className="text-xs text-zinc-500 font-mono">Tag:</span>
@@ -250,15 +263,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             </div>
 
             {/* Action Buttons */}
-            {generated ? (
-                <button 
-                  onClick={handlePublish}
-                  disabled={isGenerating}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-medium rounded-lg transition-all shadow-[0_0_10px_rgba(35,134,54,0.3)]"
-                >
-                  <Rocket size={14} /> Publish
-                </button>
-            ) : (
+              {/* Generate / Publish / Cancel / Regenerate Buttons */}
+              {!generated && (
                 <button 
                   onClick={handleGenerate}
                   disabled={isGenerating || selected.size === 0}
@@ -267,13 +273,42 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                   {isGenerating ? <RotateCcw className="animate-spin" size={14} /> : <Sparkles size={14} />}
                   Generate
                 </button>
-            )}
-          </div>
+              )}
+
+              {generated && (
+                <>
+                  <button 
+                    onClick={handlePublish}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-medium rounded-lg transition-all shadow-[0_0_10px_rgba(35,134,54,0.3)]"
+                  >
+                    <Rocket size={14} /> Publish
+                  </button>
+                  <button
+                    onClick={() => handleGenerate()}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 ml-2 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-zinc-300 hover:bg-white/7"
+                    title="Regenerate (add/remove commits and generate again)"
+                  >
+                    <RotateCcw size={14} /> Regenerate
+                  </button>
+                </>
+              )}
+
+              {isGenerating && (
+                <button
+                  onClick={handleCancel}
+                  className="ml-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/5 text-zinc-200 hover:bg-white/7"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden relative">
-          {generated ? (
+              {generated ? (
             viewMode === "preview" ? (
               // PREVIEW MODE
               <div className="h-full overflow-y-auto p-8 custom-scrollbar">
