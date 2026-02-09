@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   Check, 
   GitCommit, 
@@ -35,6 +35,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string>(""); 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [totalChunks, setTotalChunks] = useState<number>(0);
+  const [currentChunk, setCurrentChunk] = useState<number | null>(null);
+  const [completedChunks, setCompletedChunks] = useState<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
 
@@ -56,25 +60,80 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     if (selected.size === 0) return;
     setIsGenerating(true);
     setViewMode("preview"); // Switch to preview to see the magic
-    
+
+    // Setup streaming request so we can show progressive output and chunk progress
     try {
-      const selectedCommits = initialCommits.filter(c => selected.has(c.hash));
+      const selectedCommits = initialCommits.filter((c) => selected.has(c.hash));
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo: repoName, commits: selectedCommits }),
+        signal: controller.signal,
       });
 
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      // If server streams plain text, data may be string; try to handle both
-      if (typeof data === "string") setGenerated(data);
-      else setGenerated(data.changelog || data.text || JSON.stringify(data));
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No readable stream from server");
+
+      const decoder = new TextDecoder();
+      let partial = "";
+      let expectFinalReplace = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+
+        // handle control JSON markers prefixed with ~~JSON~~
+        if (chunk.startsWith("~~JSON~~")) {
+          const lines = chunk.split(/\n+/).filter(Boolean);
+          for (const ln of lines) {
+            if (!ln.startsWith("~~JSON~~")) continue;
+            try {
+              const obj = JSON.parse(ln.replace(/^~~JSON~~/, ""));
+              if (obj.meta) {
+                setTotalChunks(obj.meta.totalChunks || 0);
+              }
+              if (obj.chunkIndex !== undefined) {
+                setCurrentChunk(obj.chunkIndex);
+              }
+              if (obj.chunkDone !== undefined) {
+                setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
+                setCurrentChunk(null);
+              }
+              if (obj.final) {
+                // Next non-control content is the merged final changelog — replace instead of append
+                expectFinalReplace = true;
+              }
+            } catch (e) {
+              // ignore malformed control JSON
+            }
+          }
+          continue;
+        }
+
+        // Normal content
+        if (expectFinalReplace) {
+          // Replace with final merged content
+          partial = chunk;
+          setGenerated(partial);
+          expectFinalReplace = false;
+        } else {
+          partial += chunk;
+          setGenerated(partial);
+        }
+      }
     } catch (err) {
       console.error(err);
       setGenerated("## Error\nFailed to generate changelog.");
     } finally {
       setIsGenerating(false);
+      abortControllerRef.current = null;
     }
   }
 

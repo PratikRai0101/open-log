@@ -1,4 +1,6 @@
 import WorkstationClient from "./client-workstation";
+import { getCommits } from "../../../lib/github";
+import { extractTypeFromMessage } from "../../../lib/commitUtils";
 
 // params.repo is a catch-all array: [owner, repo]
 interface PageProps {
@@ -12,6 +14,15 @@ export default async function GeneratorPage({ params }: PageProps) {
   const [owner, repoName] = repo;
   const fullName = owner && repoName ? `${owner}/${repoName}` : repo.join("/");
 
-  // Render the client workstation which will fetch commits on the client.
-  return <WorkstationClient initialCommits={[]} repoName={fullName} />;
+  // Fetch recent commits server-side and pass them as initial state to the client
+  const rawCommits = await getCommits(fullName);
+  const initialCommits = rawCommits.map((c) => ({
+    hash: c.hash,
+    message: c.message,
+    date: c.date,
+    author_name: (c as any).author || null,
+    type: extractTypeFromMessage(c.message) as any,
+  }));
+
+  return <WorkstationClient initialCommits={initialCommits} repoName={fullName} />;
 }
