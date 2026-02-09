@@ -117,6 +117,9 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
 
       const decoder = new TextDecoder();
       // Read the stream iteratively; handle embedded JSON control lines for progress.
+      // track progress based on chunks
+      let totalChunks = 0;
+      let completedChunks = 0;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -130,11 +133,17 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
             try {
               const obj = JSON.parse(ln.replace(/^~~JSON~~/, ""));
               if (obj.meta) {
-                // we could use meta.totalChunks to show progress; ignore for now
+                totalChunks = obj.meta.totalChunks || totalChunks;
               }
               if (obj.chunkIndex !== undefined) {
-                // simple progress: append a small placeholder while we wait for content
-                setGenerated((g) => (g || "") + `\n\n<!-- Processing chunk ${obj.chunkIndex + 1}/${obj.chunkLines} -->\n`);
+                // server announced this chunk will stream next
+                // show a quick placeholder line for activity
+                setGenerated((g) => (g || "") + `\n\n<!-- Processing chunk ${obj.chunkIndex + 1} of ${totalChunks} -->\n`);
+              }
+              if (obj.chunkDone !== undefined) {
+                completedChunks = Math.max(completedChunks, obj.chunkDone + 1);
+                // replace placeholder with a small note of completion
+                setGenerated((g) => (g || "") + `\n\n<!-- Completed chunk ${obj.chunkDone + 1}/${totalChunks} -->\n`);
               }
             } catch (e) {
               // ignore malformed control JSON
@@ -146,6 +155,16 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         // Normal content - append immediately for live streaming
         partial += chunk;
         setGenerated(partial);
+        // update progress bar based on completedChunks/totalChunks
+        try {
+          const el = document.getElementById("ol-progress");
+          if (el && totalChunks > 0) {
+            const percent = Math.min(100, Math.round((completedChunks / totalChunks) * 100));
+            (el as HTMLElement).style.width = `${percent}%`;
+          }
+        } catch (e) {
+          // DOM may not be available in some environments
+        }
       }
       // Mark generation as complete (stream finished normally)
       setIsComplete(true);
@@ -353,8 +372,8 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
             {/* Top progress / error indicators */}
             <div className="max-w-3xl mx-auto mb-4">
               {isGenerating && (
-                <div className="h-1 w-full bg-white/5 rounded overflow-hidden">
-                  <div className="h-1 bg-[#FF4F4F] w-1/3 animate-[progress_2.5s_linear_infinite]" />
+                <div className="h-2 w-full bg-white/5 rounded overflow-hidden">
+                  <div id="ol-progress" className="h-2 bg-[#FF4F4F] w-0 transition-width duration-300" />
                 </div>
               )}
               {generationError && (

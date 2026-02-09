@@ -96,6 +96,8 @@ ${chunkLines.join("\n")}
                 console.error("chunk parse error:", e);
               }
             }
+            // Notify client that this chunk finished
+            controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkDone: allChunks.indexOf(chunkLines) }) + "\n"));
             // Small separator between chunk outputs
             controller.enqueue(new TextEncoder().encode("\n\n"));
           }
