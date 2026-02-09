@@ -41,6 +41,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [currentChunk, setCurrentChunk] = useState<number | null>(null);
   const [completedChunks, setCompletedChunks] = useState<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
 
@@ -90,6 +91,29 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       let partial = "";
       let expectFinalReplace = false;
 
+      const replaceGenerated = (newText: string) => {
+        try {
+          // preserve scroll position as ratio to avoid jump/flicker
+          const el = previewRef.current;
+          let ratio = 0;
+          if (el) {
+            const { scrollTop, scrollHeight, clientHeight } = el;
+            ratio = scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0;
+          }
+          setGenerated(newText);
+          // restore scroll after DOM updates
+          requestAnimationFrame(() => {
+            const el2 = previewRef.current;
+            if (el2) {
+              const { scrollHeight, clientHeight } = el2;
+              el2.scrollTop = ratio * Math.max(1, (scrollHeight - clientHeight));
+            }
+          });
+        } catch (e) {
+          setGenerated(newText);
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -125,9 +149,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
         // Normal content
         if (expectFinalReplace) {
-          // Replace with final merged content
+          // Replace with final merged content and preserve scroll
           partial = chunk;
-          setGenerated(partial);
+          replaceGenerated(partial);
           expectFinalReplace = false;
         } else {
           partial += chunk;
@@ -311,7 +335,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
               {generated ? (
             viewMode === "preview" ? (
               // PREVIEW MODE
-              <div className="h-full overflow-y-auto p-8 custom-scrollbar">
+              <div ref={previewRef} className="h-full overflow-y-auto p-8 custom-scrollbar">
                 <div className="max-w-3xl mx-auto bg-[#0A0A0B] border border-white/10 rounded-xl p-8 shadow-2xl">
                   <div className="prose prose-invert prose-sm max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-400 prose-li:text-zinc-300">
                     <ReactMarkdown>{generated}</ReactMarkdown>
