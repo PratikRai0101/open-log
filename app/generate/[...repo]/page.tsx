@@ -1,4 +1,4 @@
-import WorkstationClient from "./WorkstationClient";
+import WorkstationClient from "./client-workstation";
 
 // params.repo is a catch-all array: [owner, repo]
 interface PageProps {
@@ -13,5 +13,5 @@ export default async function GeneratorPage({ params }: PageProps) {
   const fullName = owner && repoName ? `${owner}/${repoName}` : repo.join("/");
 
   // Render the client workstation which will fetch commits on the client.
-  return <WorkstationClient repo={fullName} />;
+  return <WorkstationClient initialCommits={[]} repoName={fullName} />;
 }
