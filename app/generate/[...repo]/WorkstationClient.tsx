@@ -23,10 +23,11 @@ export type SimpleCommit = {
 };
 
 interface WorkstationProps {
+  initialCommits?: SimpleCommit[];
   repo: string;
 }
 
-export default function ClientWorkstation({ repo }: WorkstationProps) {
+export default function WorkstationClient({ initialCommits = [], repo }: WorkstationProps) {
   // State for selection and generation
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export default function ClientWorkstation({ repo }: WorkstationProps) {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo: repoName, commits: selectedCommits }),
+      body: JSON.stringify({ repo, commits: selectedCommits }),
       });
 
       if (!res.ok) throw new Error(await res.text());
@@ -93,7 +94,7 @@ export default function ClientWorkstation({ repo }: WorkstationProps) {
               <ChevronLeft size={16} />
             </Link>
             <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-zinc-100 truncate text-sm">{repoName}</span>
+              <span className="font-semibold text-zinc-100 truncate text-sm">{repo}</span>
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Select Commits</span>
             </div>
           </div>
