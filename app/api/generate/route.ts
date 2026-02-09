@@ -68,7 +68,14 @@ ${chunkLines.join("\n")}
         try {
           for (const chunkLines of allChunks) {
             const p = basePrompt(chunkLines);
-            const streamResult = await model.generateContentStream(p as any);
+            // Pass generationConfig (part of the request params) with temperature and max tokens
+            const streamResult = await model.generateContentStream({
+              contents: [p],
+              generationConfig: {
+                temperature: Number(process.env.GENERATION_TEMPERATURE) || 0.2,
+                maxOutputTokens: Number(process.env.GENERATION_MAX_TOKENS) || 1024,
+              },
+            } as any);
             for await (const part of streamResult.stream) {
               try {
                 const text = (part as any).text();

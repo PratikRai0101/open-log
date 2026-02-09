@@ -32,3 +32,7 @@ export const DEFAULT_MODEL = process.env.GEMINI_MODEL || process.env.GOOGLE_MODE
 // Default commit chunk size to avoid hitting token limits. Can be overridden
 // via COMMIT_CHUNK_SIZE env var.
 export const DEFAULT_CHUNK_SIZE = Number(process.env.COMMIT_CHUNK_SIZE) || 20;
+
+// Generation defaults (can be tuned via env)
+export const DEFAULT_TEMPERATURE = Number(process.env.GENERATION_TEMPERATURE) || 0.2;
+export const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.GENERATION_MAX_TOKENS) || 1024;
