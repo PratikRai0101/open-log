@@ -1,22 +1,41 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { generateChangelog } from "../../../lib/gemini";
+import { model } from "../../../../lib/gemini";
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { repo, commits } = await req.json();
 
-    const body = await req.json();
-    const { repo, commits } = body || {};
-    if (!repo || !Array.isArray(commits)) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    if (!commits || !Array.isArray(commits)) {
+      return NextResponse.json({ error: "Invalid commits data" }, { status: 400 });
     }
 
-    const changelog = await generateChangelog(repo, commits);
-    return NextResponse.json({ changelog });
-  } catch (err: any) {
-    console.error("/api/generate error:", err);
-    return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });
+    // Construct the prompt
+    const commitList = commits
+      .map((c: any) => `- [${c.hash.substring(0, 7)}] ${c.message} (${c.author_name})`)
+      .join("\n");
+    const prompt = `
+You are an expert Release Manager. I will give you a list of raw git commits.
+Your job is to rewrite them into a clean, professional Changelog (Markdown).
+Rules:
+1. Group commits into sections: "🚀 Features", "🐛 Bug Fixes", "⚡ Improvements", and "🔧 Chore".
+2. Remove technical jargon if possible; make it readable for humans.
+3. Combine similar commits into one summary line if they are redundant.
+4. Keep the tone exciting but professional.
+5. Do NOT include the commit hashes in the final output.
+
+Raw Commits:
+${commitList}
+`;
+
+    // Generate content
+    const result = await model.generateContent({ prompt });
+    // The library returns a response/stream; call .response then text()
+    const response = await result.response;
+    const text = await response.text();
+
+    return NextResponse.json({ changelog: text });
+  } catch (error) {
+    console.error("AI Generation Failed:", error);
+    return NextResponse.json({ error: "Generation failed" }, { status: 500 });
   }
 }
