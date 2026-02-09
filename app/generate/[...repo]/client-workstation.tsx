@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import dynamic from "next/dynamic";
+const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 import { 
   Check, 
   GitCommit, 
@@ -282,13 +284,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                 </div>
               </div>
             ) : (
-              // EDIT MODE
-              <textarea 
-                value={generated}
-                onChange={(e) => setGenerated(e.target.value)}
-                className="w-full h-full bg-[#050505] p-8 text-sm font-mono text-zinc-300 resize-none focus:outline-none custom-scrollbar leading-relaxed"
-                placeholder="Your changelog will appear here..."
-              />
+              // EDIT MODE — BlockNote rich editor
+              <div className="h-full overflow-y-auto custom-scrollbar p-4">
+                <Editor initialMarkdown={generated} onChange={(val: string) => setGenerated(val)} />
+              </div>
             )
           ) : (
             // EMPTY STATE
