@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,31 +26,36 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {/* Global background flares */}
-        <div className="anamorphic-flare-1" aria-hidden />
-        <div className="anamorphic-flare-2" aria-hidden />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ClerkProvider
+          appearance={{
+            baseTheme: dark,
+            variables: { colorPrimary: "#FF4F4F" },
+          }}
+        >
+          {/* Global background flares */}
+          <div className="anamorphic-flare-1" aria-hidden />
+          <div className="anamorphic-flare-2" aria-hidden />
 
-        {/* Global header */}
-        <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[min(1200px,94%)] z-40 glass-card px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-linear-to-r from-[#FF4F4F] to-[#6E5BFF]" />
-            <span className="text-sm font-semibold">ShipLog</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-4 text-sm opacity-90">
-            <a href="#" className="hover:underline">
-              Dashboard
-            </a>
-            <a href="#" className="hover:underline">
-              Generate
-            </a>
-          </nav>
-          <div />
-        </header>
+          {/* Global header */}
+          <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[min(1200px,94%)] z-40 glass-card px-5 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-linear-to-r from-[#FF4F4F] to-[#6E5BFF]" />
+              <span className="text-sm font-semibold">ShipLog</span>
+            </div>
+            <nav className="hidden md:flex items-center gap-4 text-sm opacity-90">
+              <a href="#" className="hover:underline">
+                Dashboard
+              </a>
+              <a href="#" className="hover:underline">
+                Generate
+              </a>
+            </nav>
+            <div />
+          </header>
 
-        {children}
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
