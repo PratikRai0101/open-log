@@ -45,6 +45,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const polishedTimerRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const [showPolishedBadge, setShowPolishedBadge] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [savedDraft, setSavedDraft] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
 
@@ -54,7 +57,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const key = `openlog:changelog:${repoName}`;
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem(key);
-        if (saved && !generated) setGenerated(saved);
+        if (saved) {
+          setSavedDraft(saved);
+          if (!generated) setGenerated(saved);
+          setLastSavedAt(Date.now());
+        }
       }
     } catch (e) {
       // noop
@@ -68,18 +75,35 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     // don't autosave empty content
     if (!generated) return;
+    setSaving(true);
     saveTimerRef.current = window.setTimeout(() => {
       try {
         const key = `openlog:changelog:${repoName}`;
         localStorage.setItem(key, generated);
+        setSavedDraft(generated);
+        setLastSavedAt(Date.now());
       } catch (e) {
         // noop
+      } finally {
+        setSaving(false);
       }
     }, 800) as unknown as number;
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
   }, [generated, repoName]);
+
+  // Helper to format relative time
+  function formatAgo(ts: number | null) {
+    if (!ts) return "";
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 5) return "just now";
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    return `${h}h ago`;
+  }
 
   // Toggle selection logic
   function toggleCommit(hash: string) {
@@ -339,17 +363,40 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
           </div>
 
             <div className="flex items-center gap-3">
-            {/* Version Input */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg focus-within:border-white/20 transition-colors">
-                <span className="text-xs text-zinc-500 font-mono">Tag:</span>
-                <input 
-                  type="text" 
-                  value={versionTag}
-                  onChange={(e) => setVersionTag(e.target.value)}
-                  className="bg-transparent border-none text-xs font-mono text-white w-16 focus:ring-0 p-0 placeholder-zinc-700"
-                  placeholder="v1.0.0"
-                />
-            </div>
+              {/* Version Input */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg focus-within:border-white/20 transition-colors">
+                  <span className="text-xs text-zinc-500 font-mono">Tag:</span>
+                  <input 
+                    type="text" 
+                    value={versionTag}
+                    onChange={(e) => setVersionTag(e.target.value)}
+                    className="bg-transparent border-none text-xs font-mono text-white w-16 focus:ring-0 p-0 placeholder-zinc-700"
+                    placeholder="v1.0.0"
+                  />
+              </div>
+
+              {/* Autosave indicator & revert control */}
+              <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                {saving ? (
+                  <span>Saving…</span>
+                ) : lastSavedAt ? (
+                  <span title={new Date(lastSavedAt).toLocaleString()}>{formatAgo(lastSavedAt)}</span>
+                ) : (
+                  <span className="text-zinc-600">No draft</span>
+                )}
+                {savedDraft && savedDraft !== generated && (
+                  <button
+                    onClick={() => {
+                      if (!confirm("Revert editor to last saved draft? Unsaved changes will be lost.")) return;
+                      setGenerated(savedDraft);
+                    }}
+                    className="ml-2 px-2 py-1 rounded bg-white/5 text-xs text-zinc-300"
+                    title="Revert to last saved draft"
+                  >
+                    Revert
+                  </button>
+                )}
+              </div>
 
             {/* Action Buttons */}
               {/* Generate / Publish / Cancel / Regenerate Buttons */}
