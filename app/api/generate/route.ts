@@ -61,7 +61,11 @@ ${chunkLines.join("\n")}
       if (chunkSize <= 0) {
         allChunks.push(lines);
       } else {
-        const parts = chunkArray(lines, chunkSize);
+        // Dynamic chunking: if enabled, cap per-chunk lines to a safe max
+        const dynamic = ((process.env.DYNAMIC_CHUNKING || "true").toLowerCase() === "true");
+        const maxChunkLines = Number(process.env.MAX_CHUNK_LINES) || 40;
+        const effectiveChunkSize = dynamic ? Math.min(chunkSize, maxChunkLines) : chunkSize;
+        const parts = chunkArray(lines, effectiveChunkSize);
         for (const p of parts) allChunks.push(p);
       }
     }
