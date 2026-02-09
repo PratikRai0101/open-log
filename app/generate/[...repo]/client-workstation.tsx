@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 import { 
@@ -43,9 +43,43 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const abortControllerRef = useRef<AbortController | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const polishedTimerRef = useRef<number | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
   const [showPolishedBadge, setShowPolishedBadge] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
+
+  // Load autosaved draft on mount (if any)
+  useEffect(() => {
+    try {
+      const key = `openlog:changelog:${repoName}`;
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(key);
+        if (saved && !generated) setGenerated(saved);
+      }
+    } catch (e) {
+      // noop
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave generated content to localStorage (debounced)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    // don't autosave empty content
+    if (!generated) return;
+    saveTimerRef.current = window.setTimeout(() => {
+      try {
+        const key = `openlog:changelog:${repoName}`;
+        localStorage.setItem(key, generated);
+      } catch (e) {
+        // noop
+      }
+    }, 800) as unknown as number;
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
+  }, [generated, repoName]);
 
   // Toggle selection logic
   function toggleCommit(hash: string) {
@@ -178,6 +212,19 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     }
   }
 
+  // Keyboard shortcuts: Cmd/Ctrl+E to toggle edit/preview
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        setViewMode((v) => (v === "edit" ? "preview" : "edit"));
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function handleCancel() {
     const controller = abortControllerRef.current;
     if (controller) {
@@ -203,6 +250,13 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const result = await publishRelease(repoName, versionTag, title, generated);
 
       if ((result as any).success && (result as any).url) {
+        try {
+          // clear autosaved draft on successful publish
+          const key = `openlog:changelog:${repoName}`;
+          if (typeof window !== "undefined") localStorage.removeItem(key);
+        } catch (e) {
+          // noop
+        }
         if (confirm("🚀 Release Published Successfully! View on GitHub?")) {
           window.open((result as any).url, "_blank");
         }
