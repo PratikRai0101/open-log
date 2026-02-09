@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import { publishRelease } from "@/app/actions";
 
 export type SimpleCommit = {
   hash: string;
@@ -33,6 +34,8 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -90,9 +93,10 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
     // Prepare to stream partial output
     let partial = "";
 
-    try {
-      // Filter the actual commit objects based on selected hashes
-      const selectedCommits = commits.filter((c) => selected.has(c.hash));
+      try {
+        setGenerationError(null);
+        // Filter the actual commit objects based on selected hashes
+        const selectedCommits = commits.filter((c) => selected.has(c.hash));
 
       // Create an AbortController so the user can cancel the request
       const controller = new AbortController();
@@ -107,7 +111,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
 
       if (!res.ok) throw new Error(await res.text());
 
-      // Stream response body incrementally
+       // Stream response body incrementally
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No readable stream from server");
 
@@ -119,16 +123,51 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         partial += chunk;
         setGenerated(partial);
       }
+      // Mark generation as complete (stream finished normally)
+      setIsComplete(true);
       // Clear controller after successful finish
       abortControllerRef.current = null;
     } catch (err) {
       // If aborted by user, show a short notice but keep partial content
       if ((err as any)?.name === "AbortError") {
         console.log("Generation aborted by user");
+        // aborted means not complete
+        setIsComplete(false);
       } else {
         console.error(err);
-        setGenerated("## Error\nFailed to generate changelog. Please check console.");
+        const message = (err as any)?.message || "Failed to generate changelog. Please check console.";
+        setGenerationError(message);
+        // keep any partial content but surface the error to the user
+        if (!partial) setGenerated("## Error\n" + message);
+        setIsComplete(false);
       }
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!generated) return;
+
+    const tag = window.prompt("Enter a version tag for this release (e.g., v1.0.0):", "v1.0.0");
+    if (!tag) return; // cancelled
+
+    setIsGenerating(true);
+    try {
+      const title = generated.split("\n")[0].replace(/^#\s*/, "") || "New Release";
+      // Server action call
+      const result = await publishRelease(repo, tag, title, generated);
+      if (result && (result as any).success) {
+        const url = (result as any).url;
+        if (confirm("Release published! View on GitHub?")) {
+          window.open(url, "_blank");
+        }
+      } else {
+        alert("Error: " + ((result as any).error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while publishing the release.");
     } finally {
       setIsGenerating(false);
     }
@@ -140,6 +179,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
       controller.abort();
       abortControllerRef.current = null;
       setIsGenerating(false);
+      setIsComplete(false);
     }
   }
 
@@ -265,6 +305,15 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
               </>
             )}
           </button>
+          {/* Publish button: only shown when we have generated content and not currently generating */}
+          {generated && !isGenerating && (
+            <button
+              onClick={handlePublish}
+              className="ml-3 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              Publish
+            </button>
+          )}
           {isGenerating && (
             <button
               onClick={handleCancel}
@@ -276,10 +325,33 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 relative z-10">
-          {generated ? (
+          <div className="flex-1 overflow-y-auto p-8 relative z-10">
+            {/* Top progress / error indicators */}
+            <div className="max-w-3xl mx-auto mb-4">
+              {isGenerating && (
+                <div className="h-1 w-full bg-white/5 rounded overflow-hidden">
+                  <div className="h-1 bg-[#FF4F4F] w-1/3 animate-[progress_2.5s_linear_infinite]" />
+                </div>
+              )}
+              {generationError && (
+                <div className="mt-3 p-3 rounded-md bg-amber-900/60 text-amber-100 flex items-center justify-between">
+                  <div className="text-sm">{generationError}</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleGenerate()}
+                      className="px-3 py-1 rounded bg-amber-700/80 text-sm text-white"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {generated ? (
             <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="bg-[#0A0A0B] border border-white/10 rounded-xl p-8 shadow-2xl relative">
+                {/* Publish button moved to header for discoverability */}
                 {/* Copy Button */}
                 <button 
                   onClick={() => navigator.clipboard.writeText(generated)}
