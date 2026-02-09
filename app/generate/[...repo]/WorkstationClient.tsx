@@ -36,6 +36,9 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
   const [isGenerating, setIsGenerating] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [totalChunksState, setTotalChunksState] = useState<number>(0);
+  const [currentChunkState, setCurrentChunkState] = useState<number | null>(null);
+  const [completedChunksState, setCompletedChunksState] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -134,16 +137,17 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
               const obj = JSON.parse(ln.replace(/^~~JSON~~/, ""));
               if (obj.meta) {
                 totalChunks = obj.meta.totalChunks || totalChunks;
+                setTotalChunksState(totalChunks);
               }
               if (obj.chunkIndex !== undefined) {
                 // server announced this chunk will stream next
-                // show a quick placeholder line for activity
-                setGenerated((g) => (g || "") + `\n\n<!-- Processing chunk ${obj.chunkIndex + 1} of ${totalChunks} -->\n`);
+                setCurrentChunkState(obj.chunkIndex);
               }
               if (obj.chunkDone !== undefined) {
                 completedChunks = Math.max(completedChunks, obj.chunkDone + 1);
-                // replace placeholder with a small note of completion
-                setGenerated((g) => (g || "") + `\n\n<!-- Completed chunk ${obj.chunkDone + 1}/${totalChunks} -->\n`);
+                setCompletedChunksState(completedChunks);
+                // clear current chunk
+                setCurrentChunkState(null);
               }
             } catch (e) {
               // ignore malformed control JSON
@@ -155,16 +159,6 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         // Normal content - append immediately for live streaming
         partial += chunk;
         setGenerated(partial);
-        // update progress bar based on completedChunks/totalChunks
-        try {
-          const el = document.getElementById("ol-progress");
-          if (el && totalChunks > 0) {
-            const percent = Math.min(100, Math.round((completedChunks / totalChunks) * 100));
-            (el as HTMLElement).style.width = `${percent}%`;
-          }
-        } catch (e) {
-          // DOM may not be available in some environments
-        }
       }
       // Mark generation as complete (stream finished normally)
       setIsComplete(true);
@@ -376,6 +370,12 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
                   <div id="ol-progress" className="h-2 bg-[#FF4F4F] w-0 transition-width duration-300" />
                 </div>
               )}
+              {/* Small textual progress beneath the bar */}
+              {isGenerating && totalChunksState > 0 && (
+                <div className="mt-2 text-xs text-zinc-500 font-mono">
+                  Chunk {Math.max(1, (currentChunkState ?? completedChunksState))} of {totalChunksState} — {completedChunksState} completed
+                </div>
+              )}
               {generationError && (
                 <div className="mt-3 p-3 rounded-md bg-amber-900/60 text-amber-100 flex items-center justify-between">
                   <div className="text-sm">{generationError}</div>
@@ -403,6 +403,13 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
                 >
                   <Copy size={16} />
                 </button>
+                {/* Typing indicator for the active chunk */}
+                {isGenerating && currentChunkState !== null && (
+                  <div className="absolute left-4 top-4 flex items-center gap-2 text-sm text-zinc-400">
+                    <RotateCcw className="animate-spin" size={14} />
+                    <span>Processing chunk {currentChunkState + 1} of {totalChunksState}</span>
+                  </div>
+                )}
 
                 {/* Markdown Renderer */}
                 <div className="prose prose-invert prose-sm max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-400 prose-li:text-zinc-300">
