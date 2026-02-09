@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 // --- Types ---
 export interface Repo {
@@ -37,17 +37,22 @@ export interface Commit {
 export type ReposResult = { repos: Repo[]; hasToken: boolean };
 
 export async function getUserRepos(): Promise<ReposResult> {
-  const { getToken } = await auth();
-  const template = process.env.GITHUB_OAUTH_TEMPLATE ?? "oauth_github";
+  const { userId } = await auth();
 
-  let token: string | null = null;
-  try {
-    token = await getToken({ template });
-  } catch (err: any) {
-    // Clerk returns a 404/Not Found when the template doesn't exist.
-    console.error(`Error while fetching OAuth token from Clerk (template=${template}):`, err?.message ?? err);
-    console.error(`Hint: Ensure an OAuth template with the slug '${template}' exists in your Clerk dashboard, and that GitHub is configured as a provider for it.`);
+  if (!userId) {
     return { repos: [], hasToken: false };
+  }
+
+  // 1. Get the raw token directly from Clerk's backend API
+  // We use 'oauth_github' which is the standard provider ID for GitHub
+  const client = await clerkClient();
+  
+  let token: string | undefined;
+  try {
+    const tokenResponse = await client.users.getUserOauthAccessToken(userId, 'oauth_github');
+    token = tokenResponse.data[0]?.token;
+  } catch (err) {
+    console.error("Error fetching GitHub token:", err);
   }
 
   if (!token) {
@@ -55,9 +60,10 @@ export async function getUserRepos(): Promise<ReposResult> {
     return { repos: [], hasToken: false };
   }
 
+  // 2. Now 'token' is the raw 'gho_...' string that GitHub understands
   const res = await fetch("https://api.github.com/user/repos?sort=updated&per_page=30", {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`, // Send the raw token
       Accept: "application/vnd.github.v3+json",
     },
     next: { revalidate: 60 },
@@ -86,8 +92,19 @@ export async function getCommits(repoFullName: string): Promise<SimpleCommit[]> 
   const [owner, repo] = repoFullName.split("/");
   if (!owner || !repo) return [];
 
-  const { getToken } = await auth();
-  const token = await getToken({ template: "oauth_github" });
+  const { userId } = await auth();
+  if (!userId) return [];
+
+  // FIX: Use clerkClient to get the real GitHub token (starts with gho_)
+  const client = await clerkClient();
+  let token: string | undefined;
+  
+  try {
+    const tokenResponse = await client.users.getUserOauthAccessToken(userId, 'oauth_github');
+    token = tokenResponse.data[0]?.token;
+  } catch (err) {
+    console.error("Error fetching token for commits:", err);
+  }
 
   if (!token) return [];
 

@@ -27,20 +27,19 @@ export default async function Dashboard() {
 
           <div className="flex items-center gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
-                <button className="text-xs font-medium bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5 transition-colors">
-                  Sign In
-                </button>
-              </SignInButton>
+              <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
             </SignedOut>
             <SignedIn>
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "size-8 ring-1 ring-white/10",
-                  },
-                }}
-              />
+              <div className="flex items-center gap-3">
+                <LinkGitHub template={process.env.GITHUB_OAUTH_TEMPLATE} />
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "size-8 ring-1 ring-white/10",
+                    },
+                  }}
+                />
+              </div>
             </SignedIn>
           </div>
         </div>
