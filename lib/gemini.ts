@@ -9,5 +9,7 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
-// We use 'gemini-1.5-flash' for fast, low-latency responses
-export const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Use a model supported by the v1beta API. `text-bison-001` is broadly available
+// and works well for concise text generation. If you have access to a Gemini
+// model in your Google Cloud project, replace this value with the model name.
+export const model = genAI.getGenerativeModel({ model: "text-bison-001" });
