@@ -224,15 +224,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     setViewMode("preview"); // Switch to preview to see the magic
 
     // Setup streaming request so we can show progressive output and chunk progress
-    // flusher must be declared in this outer scope so the finally block can clear it
-    let flusher: number | null = null;
     try {
       const selectedCommits = initialCommits.filter((c) => selected.has(c.hash));
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
-
-      // flusher lives in outer scope of try so finally can clear it
 
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -254,6 +250,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       // Different models get different pacing to avoid feeling laggy.
       let revealBuffer = "";
       let displayed = "";
+      let flusher: number | null = null;
       const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
       const flushInterval = isGemma ? 40 : 80; // ms between UI updates
       const charsPerTick = isGemma ? 6 : 18; // characters revealed per tick
@@ -286,25 +283,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             // ignore flusher errors
           }
         }, flushInterval) as unknown as number;
-      };
-
-      // Reveal an immediate prefix of incoming text to avoid long pauses
-      const revealImmediate = (text: string) => {
-        if (!text) return;
-        // determine immediate reveal size: small fraction but at least a few chars
-        const target = Math.max(12, Math.min(48, Math.floor(text.length * 0.18) || 12));
-        let take = text.slice(0, target);
-        // prefer not to cut mid-word: try to cut at last space within the prefix
-        const lastSpace = take.lastIndexOf(" ");
-        if (lastSpace > Math.floor(take.length * 0.4)) {
-          take = take.slice(0, lastSpace + 1);
-        }
-        // append to displayed and schedule UI update
-        displayed += take;
-        // schedule an immediate update (not to block the current loop)
-        requestAnimationFrame(() => replaceGenerated(displayed, false));
-        // return remainder to be buffered
-        return text.slice(take.length);
       };
 
       // show loading skeleton while receiving content
@@ -343,122 +321,94 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         }
       };
 
+       // Streaming parser buffer to safely extract control JSON markers that may
+       // be split across chunks. We accumulate into streamBuf and process any
+       // control markers (~~JSON~~{...}) found inside it.
+       let streamBuf = "";
+
        while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
+         const { done, value } = await reader.read();
+         if (done) break;
+         const chunk = decoder.decode(value, { stream: true });
+         streamBuf += chunk;
 
-        // handle control JSON markers prefixed with ~~JSON~~ anywhere inside the chunk
-        if (chunk.includes("~~JSON~~")) {
-          // We'll split on the marker and parse JSON objects that immediately follow it.
-          // JSON may include nested braces and newlines, so we find the balanced '}' manually.
-          const parts = chunk.split("~~JSON~~");
-          // first part is normal text before any marker
-          let normalText = parts.shift() || "";
+         // Process any control JSON markers embedded in the buffer. Markers are
+         // expected in the form: ~~JSON~~{...}\n but may be split across chunks.
+         while (true) {
+           const idx = streamBuf.indexOf("~~JSON~~");
+           if (idx === -1) break;
 
-          const extractBalancedJSON = (s: string) => {
-            let depth = 0;
-            let started = false;
-            for (let i = 0; i < s.length; i++) {
-              const ch = s[i];
-              if (ch === '{') { depth++; started = true; }
-              else if (ch === '}') { depth--; if (started && depth === 0) return { json: s.slice(0, i + 1), rest: s.slice(i + 1) }; }
-            }
-            return null;
-          };
-
-          for (const p of parts) {
-            if (!p) continue;
-            // try to extract a balanced JSON object
-            const res = extractBalancedJSON(p);
-            if (res) {
-              try {
-                const obj = JSON.parse(res.json);
-                if (obj.meta) setTotalChunks(obj.meta.totalChunks || 0);
-                if (obj.chunkIndex !== undefined) setCurrentChunk(obj.chunkIndex);
-                if (obj.chunkDone !== undefined) {
-                  setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
-                  setCurrentChunk(null);
-                }
-                if (obj.final) {
-                  expectFinalReplace = true;
-                }
-              } catch (e) {
-                // ignore malformed JSON
-              }
-              // anything after the JSON object is normal text
-              normalText += (res.rest || "");
-            } else {
-              // fallback: if we couldn't find a balanced JSON, try splitting by newline
-              const idx = p.indexOf('\n');
-              if (idx >= 0) {
-                const maybe = p.slice(0, idx).trim();
-                try {
-                  const obj = JSON.parse(maybe);
-                  if (obj.meta) setTotalChunks(obj.meta.totalChunks || 0);
-                  if (obj.chunkIndex !== undefined) setCurrentChunk(obj.chunkIndex);
-                  if (obj.chunkDone !== undefined) {
-                    setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
-                    setCurrentChunk(null);
-                  }
-                  if (obj.final) expectFinalReplace = true;
-                  normalText += p.slice(idx + 1);
-                } catch (e) {
-                  // not JSON — treat entire part as text
-                  normalText += p;
-                }
-              } else {
-                normalText += p;
-              }
-            }
-          }
-
-          // now normalText contains the non-control content from this chunk
-          if (normalText) {
-            if (expectFinalReplace) {
-              // if final flag seen, replace instead of append
-              partial = normalText;
-              // stop flusher
-              revealBuffer = "";
-              displayed = partial;
-              if (flusher) { clearInterval(flusher as number); flusher = null; }
-              replaceGenerated(partial, true);
-              expectFinalReplace = false;
-            } else {
-              // reveal a small immediate prefix to avoid long pauses, buffer the rest
-              const remainder = revealImmediate(normalText);
-              if (remainder) {
-                revealBuffer += remainder;
-                startFlusher();
-              }
-            }
-          }
-
-          continue;
-        }
-
-        // Normal content
-         if (expectFinalReplace) {
-           // Replace with final merged content and preserve scroll
-           partial = chunk;
-           // stop flusher and reveal fully
-           revealBuffer = "";
-           displayed = partial;
-           if (flusher) {
-             clearInterval(flusher as number);
-             flusher = null;
+           // Any text before the marker is normal content -> reveal progressively
+           if (idx > 0) {
+             const textBefore = streamBuf.slice(0, idx);
+             if (expectFinalReplace) {
+               partial = textBefore;
+               revealBuffer = "";
+               displayed = partial;
+               if (flusher) {
+                 clearInterval(flusher as number);
+                 flusher = null;
+               }
+               replaceGenerated(partial, true);
+               expectFinalReplace = false;
+             } else {
+               revealBuffer += textBefore;
+               startFlusher();
+             }
            }
-           replaceGenerated(partial, true);
-           expectFinalReplace = false;
-         } else {
-           // reveal a small immediate prefix and buffer remainder for the flusher
-           const remainder = revealImmediate(chunk);
-           if (remainder) {
-             revealBuffer += remainder;
-             startFlusher();
+
+           // Try to extract the JSON block following the marker. Wait for a newline
+           // that terminates the JSON payload; if not present yet, wait for more data.
+           const rest = streamBuf.slice(idx + 8);
+           const nl = rest.indexOf("\n");
+           if (nl === -1) {
+             // incomplete JSON payload — wait for next chunk
+             break;
+           }
+
+           const jsonText = rest.slice(0, nl).trim();
+           // Advance streamBuf past the processed marker+payload+newline
+           streamBuf = rest.slice(nl + 1);
+
+           try {
+             if (jsonText) {
+               const obj = JSON.parse(jsonText);
+               if (obj.meta) setTotalChunks(obj.meta.totalChunks || 0);
+               if (obj.chunkIndex !== undefined) setCurrentChunk(obj.chunkIndex);
+               if (obj.chunkDone !== undefined) {
+                 setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
+                 setCurrentChunk(null);
+               }
+               if (obj.final) {
+                 // next non-control content should replace instead of append
+                 expectFinalReplace = true;
+               }
+             }
+           } catch (e) {
+             // ignore malformed JSON — continue processing remaining buffer
            }
          }
-      }
+
+         // After processing markers, whatever remains in streamBuf is normal text.
+         if (streamBuf) {
+           if (expectFinalReplace) {
+             partial = streamBuf;
+             revealBuffer = "";
+             displayed = partial;
+             if (flusher) {
+               clearInterval(flusher as number);
+               flusher = null;
+             }
+             replaceGenerated(partial, true);
+             expectFinalReplace = false;
+             streamBuf = "";
+           } else {
+             revealBuffer += streamBuf;
+             startFlusher();
+             streamBuf = "";
+           }
+         }
+       }
     } catch (err) {
       console.error(err);
       setGenerated("## Error\nFailed to generate changelog.");
