@@ -20,6 +20,37 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   const lastPushedRef = /*#__PURE__*/ { current: null } as any;
   const suppressOnChangeRef = /*#__PURE__*/ { current: false } as any;
   const domRetryRef = useRef<{ timer: number | null; attempts: number }>({ timer: null, attempts: 0 });
+  const enforceIntervalRef = useRef<number | null>(null);
+
+  const selectors = [
+    '.bn-editor__content',
+    '.bn-view__content',
+    '.bn-container',
+    '.bn-root',
+    '.blocknote-root',
+    '.blocknote-editor'
+  ];
+
+  // Helper to set contentEditable on matching elements within root or document
+  const setContentEditableAll = (editableFlag: boolean) => {
+    try {
+      const root = containerRef.current || document.body;
+      if (!root) return false;
+      let found = false;
+      selectors.forEach((sel) => {
+        const els = Array.from(root.querySelectorAll<HTMLElement>(sel));
+        els.forEach((el) => {
+          el.contentEditable = editableFlag ? 'true' : 'false';
+          if (!editableFlag) el.setAttribute('aria-readonly', 'true');
+          else el.removeAttribute('aria-readonly');
+          found = true;
+        });
+      });
+      return found;
+    } catch (e) {
+      return false;
+    }
+  };
 
   // Create editor instance once and set into state
   useEffect(() => {
@@ -138,24 +169,33 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
       domRetryRef.current.attempts = 0;
     }
 
-    if (!trySetContentEditable()) {
-      // schedule retries up to a small limit
-      const maxAttempts = 8;
-      const schedule = () => {
-        domRetryRef.current.attempts += 1;
-        if (trySetContentEditable() || domRetryRef.current.attempts >= maxAttempts) {
-          return;
-        }
-        domRetryRef.current.timer = window.setTimeout(schedule, 120) as unknown as number;
-      };
-      domRetryRef.current.timer = window.setTimeout(schedule, 120) as unknown as number;
+    // Try once immediately, then schedule some repeated enforcement because BlockNote
+    // may mount or rehydrate after our initial attempt when the page loads.
+    trySetContentEditable();
+
+    // Clear any previous interval
+    if (enforceIntervalRef.current) {
+      window.clearInterval(enforceIntervalRef.current as number);
+      enforceIntervalRef.current = null;
     }
+
+    // Run an enforcement interval for a short duration to catch late mountings.
+    let runs = 0;
+    enforceIntervalRef.current = window.setInterval(() => {
+      runs += 1;
+      setContentEditableAll(!!editable);
+      if (runs > 12) {
+        if (enforceIntervalRef.current) window.clearInterval(enforceIntervalRef.current as number);
+        enforceIntervalRef.current = null;
+      }
+    }, 150) as unknown as number;
   }, [editor, editable]);
 
   // cleanup retry timer on unmount
   useEffect(() => {
     return () => {
       if (domRetryRef.current.timer) window.clearTimeout(domRetryRef.current.timer as number);
+      if (enforceIntervalRef.current) window.clearInterval(enforceIntervalRef.current as number);
     };
   }, []);
 
