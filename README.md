@@ -1,8 +1,8 @@
 <!-- Hero + badges modeled after Better Shot README style -->
 <div align="center">
-  <a href="https://discord.gg/zThjstVs"><img alt="Discord" src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white"/></a>
-  <a href="https://x.com/code_kartik"><img alt="X (Twitter)" src="https://img.shields.io/badge/X-%231DA1F2.svg?style=for-the-badge&logo=X&logoColor=white"/></a>
-  <a href="https://www.buymeacoffee.com/code_kartik"><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black"/></a>
+  <a href="https://www.linkedin.com/in/pratikrai0101/"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
+  <a href="https://x.com/PratikRai0101"><img alt="X (Twitter)" src="https://img.shields.io/badge/X-%231DA1F2.svg?style=for-the-badge&logo=X&logoColor=white"/></a>
+  <a><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black"/></a>
 
   <h1>OpenLog</h1>
   <p><strong>An open-source, AI-native release manager for developers.</strong></p>
@@ -15,7 +15,7 @@
 
 ---
 
-![openlog-hero](https://github.com/user-attachments/assets/3051266a-5179-440f-a747-7980abd7bac3)
+![openlog-hero](/hero-screenshot.png)
 
 > OpenLog automates changelog writing. Select commits, generate an AI draft (Groq), polish in a rich BlockNote workstation, and publish to GitHub Releases.
 
