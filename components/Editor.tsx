@@ -38,25 +38,23 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When initialMarkdown changes, update editor content only if it's different.
+  // When initialMarkdown changes, update editor content.
+  // We avoid reading the editor's current markdown here to keep this fast during streaming.
   useEffect(() => {
     if (!editor) return;
     let cancelled = false;
     (async () => {
       try {
-        const current = await (editor as any).blocksToMarkdownLossy(editor.document).catch(() => null);
-        if (initialMarkdown && initialMarkdown !== current && initialMarkdown !== lastPushedRef.current) {
-          if (typeof (editor as any).tryParseMarkdownToBlocks === "function") {
-            // Suppress emitting onChange while we programmatically replace blocks to avoid
-            // creating an update loop between parent -> prop -> replace -> parent
-            suppressOnChangeRef.current = true;
-            const blocks = await (editor as any).tryParseMarkdownToBlocks(initialMarkdown);
-            await (editor as any).replaceBlocks((editor as any).document, blocks);
-            lastPushedRef.current = initialMarkdown;
-            // Notify parent once with the canonical markdown and re-enable onChange
-            try { onChange(initialMarkdown); } catch (e) { /* ignore */ }
-            suppressOnChangeRef.current = false;
-          }
+        // If the parent already pushed this exact markdown, skip.
+        if (initialMarkdown === lastPushedRef.current) return;
+        if (initialMarkdown && typeof (editor as any).tryParseMarkdownToBlocks === "function") {
+          // Suppress emitting onChange while we programmatically replace blocks to avoid
+          // creating an update loop between parent -> prop -> replace -> parent
+          suppressOnChangeRef.current = true;
+          const blocks = await (editor as any).tryParseMarkdownToBlocks(initialMarkdown);
+          await (editor as any).replaceBlocks((editor as any).document, blocks);
+          lastPushedRef.current = initialMarkdown;
+          suppressOnChangeRef.current = false;
         }
       } catch (e) {
         // ignore
