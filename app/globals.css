@@ -534,3 +534,41 @@ body{
 .bn-list-item::before {
   background-color: rgba(255,255,255,0.04);
 }
+
+/* Sidebar commit timeline/dot */
+.commit-item {
+  position: relative;
+}
+.commit-item::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.commit-item::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.02);
+  z-index: 0;
+}
+
+/* Editor: emphasize bolded titles and version styling */
+.bn-view__content strong,
+.bn-editor__content strong {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+.release-version {
+  color: #FF6363;
+  font-weight: 700;
+}

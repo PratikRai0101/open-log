@@ -448,7 +448,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                 const isSelected = selected.has(c.hash);
                 return (
                   <div key={c.hash} onClick={() => toggleCommit(c.hash)} 
-                    className={`px-5 py-4 border-b border-white/[0.02] cursor-pointer transition-colors hover:bg-white/[0.02] ${isSelected ? 'bg-white/[0.04]' : ''}`}
+                    className={`commit-item px-5 py-4 border-b border-white/[0.02] cursor-pointer transition-colors hover:bg-white/[0.02] ${isSelected ? 'bg-white/[0.04]' : ''}`}
                   >
                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{c.type}</span>
@@ -476,7 +476,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            <div className="flex-1 overflow-hidden relative">
               {generated ? (
                  <div className="h-full flex flex-col px-12 pt-12">
-                    <h1 className="text-4xl font-bold text-zinc-100 mb-6">Release Notes <span className="text-zinc-600">{versionTag}</span></h1>
+                 <h1 className="text-4xl font-bold text-zinc-100 mb-6">Release Notes <span className="release-version">{versionTag}</span></h1>
                     <div className="flex-1 pb-20">
                        <Editor 
                          ref={editorRef}
