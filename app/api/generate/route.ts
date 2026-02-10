@@ -158,6 +158,28 @@ ${chunkLines.join("\n")}
       }
     }
 
+    // If Gemini is disabled (no GOOGLE_API_KEY) or we've globally disabled the
+    // Gemini path, fall back to the Groq/Moonshot path used elsewhere which
+    // requires provider API keys. This prevents attempts to call the Google
+    // Generative REST endpoint without credentials which returns 403.
+    if (!process.env.GOOGLE_API_KEY || !useGemini) {
+      try {
+        const messages: string[] = (commits || []).map((c: any) => {
+          if (!c) return "";
+          if (typeof c === "string") return c;
+          return c.message || c.commit?.message || String(c);
+        });
+
+        // Use the Groq-compatible path to generate a single changelog for the
+        // entire commit set. This preserves UX while avoiding Gemini calls.
+        const md = await generateChangelog(messages, "llama-3.3-70b-versatile", repo || "project");
+        return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      } catch (err) {
+        console.error("Fallback generation failed:", err);
+        return NextResponse.json({ error: "Generation failed" }, { status: 500 });
+      }
+    }
+
     const readable = new ReadableStream({
       async start(controller) {
         try {
