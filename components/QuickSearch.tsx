@@ -157,10 +157,12 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
   }, []);
 
   if (inline) {
+    // Render absolutely positioned overlay inside the search island container
+    // so it overlaps content instead of pushing it down.
     return (
-      <div className={`relative transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`absolute left-0 right-0 mt-2 z-50 pointer-events-auto transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {visible && results.length > 0 && (
-          <div className="mt-4 max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
+          <div className="max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
             <ul role="listbox" className="outline-none">
               {results.map((r, i) => (
                 <li
