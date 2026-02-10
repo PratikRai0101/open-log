@@ -4,14 +4,14 @@ import { BlockNoteView } from "@blocknote/mantine";
 import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 
 interface EditorProps {
   initialMarkdown: string;
   onChange: (markdown: string) => void;
 }
 
-export default function Editor({ initialMarkdown, onChange }: EditorProps) {
+const Editor = forwardRef(function Editor({ initialMarkdown, onChange }: EditorProps, ref) {
   const [editor, setEditor] = useState<any>(null);
   const newEditor: any = useCreateBlockNote();
 
@@ -62,9 +62,23 @@ export default function Editor({ initialMarkdown, onChange }: EditorProps) {
 
   if (!editor) return <div>Loading Editor...</div>;
 
+  // expose a method to get the current markdown synchronously/asynchronously
+  useImperativeHandle(ref, () => ({
+    getMarkdown: async () => {
+      if (!editor) return initialMarkdown || "";
+      try {
+        return await editor.blocksToMarkdownLossy(editor.document);
+      } catch (e) {
+        return initialMarkdown || "";
+      }
+    }
+  }), [editor, initialMarkdown]);
+
   return (
     <div className="h-full">
       <BlockNoteView editor={editor} />
     </div>
   );
-}
+});
+
+export default Editor;

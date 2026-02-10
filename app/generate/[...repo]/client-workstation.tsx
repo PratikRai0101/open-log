@@ -50,6 +50,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [savedDraft, setSavedDraft] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
+  const editorRef = useRef<any>(null);
 
   // Load autosaved draft on mount (if any)
   useEffect(() => {
@@ -268,9 +269,20 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
     setIsGenerating(true);
     try {
+      // ensure we have the latest editor content before publishing
+      if (editorRef.current && typeof editorRef.current.getMarkdown === "function") {
+        try {
+          const latest = await editorRef.current.getMarkdown();
+          if (latest && latest !== generated) {
+            setGenerated(latest);
+          }
+        } catch (e) {
+          // ignore and proceed with current generated
+        }
+      }
       // Clean title from the first line (remove # or **)
       const title = generated.split('\n')[0].replace(/^[#*]+\s*/, '').replace(/\*\*/g, '') || "New Release";
-      
+
       const result = await publishRelease(repoName, versionTag, title, generated);
 
       if ((result as any).success && (result as any).url) {
@@ -462,7 +474,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             ) : (
               // EDIT MODE — BlockNote rich editor
               <div className="h-full overflow-y-auto custom-scrollbar p-4">
-                <Editor initialMarkdown={generated} onChange={(val: string) => setGenerated(val)} />
+                <Editor ref={editorRef} initialMarkdown={generated} onChange={(val: string) => setGenerated(val)} />
               </div>
             )
           ) : (
