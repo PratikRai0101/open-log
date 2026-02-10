@@ -16,17 +16,17 @@ interface EditorProps {
 const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable = true }: EditorProps, ref) {
   const [editor, setEditor] = useState<BlockNoteEditor | null>(null);
   const newEditor: any = useCreateBlockNote();
+  const createdRef = /*#__PURE__*/ { current: null } as any;
+  const lastPushedRef = /*#__PURE__*/ { current: null } as any;
+  const suppressOnChangeRef = /*#__PURE__*/ { current: false } as any;
 
-  // Initialize editor and set initial content
+  // Create editor instance once and set into state
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        if (initialMarkdown && typeof newEditor.tryParseMarkdownToBlocks === "function") {
-          const blocks = await newEditor.tryParseMarkdownToBlocks(initialMarkdown);
-          await newEditor.replaceBlocks(newEditor.document, blocks);
-        }
-        if (mounted) setEditor(newEditor);
+        if (!createdRef.current) createdRef.current = newEditor;
+        if (mounted) setEditor(createdRef.current);
       } catch (e) {
         console.error("Editor init error:", e);
         if (mounted) setEditor(newEditor);
@@ -34,7 +34,36 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     }
     load();
     return () => { mounted = false; };
-  }, [newEditor, initialMarkdown]);
+    // Intentionally only run once when component mounts. newEditor is stable from the hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When initialMarkdown changes, update editor content only if it's different.
+  useEffect(() => {
+    if (!editor) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const current = await (editor as any).blocksToMarkdownLossy(editor.document).catch(() => null);
+        if (initialMarkdown && initialMarkdown !== current && initialMarkdown !== lastPushedRef.current) {
+          if (typeof (editor as any).tryParseMarkdownToBlocks === "function") {
+            // Suppress emitting onChange while we programmatically replace blocks to avoid
+            // creating an update loop between parent -> prop -> replace -> parent
+            suppressOnChangeRef.current = true;
+            const blocks = await (editor as any).tryParseMarkdownToBlocks(initialMarkdown);
+            await (editor as any).replaceBlocks((editor as any).document, blocks);
+            lastPushedRef.current = initialMarkdown;
+            // Notify parent once with the canonical markdown and re-enable onChange
+            try { onChange(initialMarkdown); } catch (e) { /* ignore */ }
+            suppressOnChangeRef.current = false;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editor, initialMarkdown]);
 
   // Expose getMarkdown for publish flush
   useImperativeHandle(ref, () => ({
@@ -68,6 +97,7 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     let cancelled = false;
     const interval = setInterval(async () => {
       try {
+        if (suppressOnChangeRef.current) return;
         const markdown = await (editor as any).blocksToMarkdownLossy(editor.document);
         if (!cancelled) onChange(markdown);
       } catch (e) {
@@ -79,7 +109,7 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     (async () => {
       try {
         const markdown = await (editor as any).blocksToMarkdownLossy(editor.document);
-        if (!cancelled) onChange(markdown);
+        if (!cancelled && !suppressOnChangeRef.current) onChange(markdown);
       } catch (e) {
         // noop
       }
