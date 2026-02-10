@@ -163,6 +163,7 @@ ${chunkLines.join("\n")}
     // requires provider API keys. This prevents attempts to call the Google
     // Generative REST endpoint without credentials which returns 403.
     if (!process.env.GOOGLE_API_KEY || !useGemini) {
+      console.info("API generate: falling back to Groq path (Gemini disabled). GOOGLE_API_KEY present=", !!process.env.GOOGLE_API_KEY);
       try {
         const messages: string[] = (commits || []).map((c: any) => {
           if (!c) return "";
@@ -173,7 +174,10 @@ ${chunkLines.join("\n")}
         // Use the Groq-compatible path to generate a single changelog for the
         // entire commit set. This preserves UX while avoiding Gemini calls.
         const md = await generateChangelog(messages, "llama-3.3-70b-versatile", repo || "project");
-        return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        console.info("API generate: Groq returned length=", (md || "").length);
+        // redact a short preview for logs
+        console.debug("API generate: preview:", (md || "").slice(0, 256));
+        return new Response(md || "", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       } catch (err) {
         console.error("Fallback generation failed:", err);
         return NextResponse.json({ error: "Generation failed" }, { status: 500 });

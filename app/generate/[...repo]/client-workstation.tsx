@@ -290,10 +290,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       setGenerated("");
       setIsGenerating(true);
 
-      const replaceGenerated = (newText: string, polished = false) => {
+       const replaceGenerated = (newText: string, polished = false) => {
         try {
           // preserve scroll position as ratio to avoid jump/flicker
-          const el = previewRef.current;
+           const el = previewRef.current || document.querySelector('.bn-view__content') as HTMLDivElement | null;
           let ratio = 0;
           if (el) {
             const { scrollTop, scrollHeight, clientHeight } = el;
@@ -310,13 +310,13 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             }, 3000) as unknown as number;
           }
           // restore scroll after DOM updates
-          requestAnimationFrame(() => {
-            const el2 = previewRef.current;
-            if (el2) {
-              const { scrollHeight, clientHeight } = el2;
-              el2.scrollTop = ratio * Math.max(1, (scrollHeight - clientHeight));
-            }
-          });
+           requestAnimationFrame(() => {
+             const el2 = previewRef.current || document.querySelector('.bn-view__content') as HTMLDivElement | null;
+             if (el2) {
+               const { scrollHeight, clientHeight } = el2;
+               el2.scrollTop = ratio * Math.max(1, (scrollHeight - clientHeight));
+             }
+           });
         } catch (e) {
           setGenerated(newText);
         }
