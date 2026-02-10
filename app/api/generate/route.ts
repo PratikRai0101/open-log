@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE } from "../../../lib/gemini";
+import { generateChangelog, AIModel } from "@/lib/ai";
 import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
 
 // Resolve the model at runtime so developers can override with env or available models
@@ -7,7 +8,7 @@ const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
 
 export async function POST(req: Request) {
   try {
-    const { repo, commits } = await req.json();
+    const { repo, commits, model } = await req.json();
 
     if (!commits || !Array.isArray(commits)) {
       return NextResponse.json({ error: "Invalid commits data" }, { status: 400 });
@@ -129,6 +130,28 @@ ${chunkLines.join("\n")}
 
     // Create a combined ReadableStream that sequentially streams each chunk's
     // generated text.
+    // If client requested one of our explicit models (Groq/Moonshot), use the
+    // lib/ai wrapper which talks to those providers. We return the full
+    // generated markdown as a single response (non-streaming) to keep the
+    // client experience consistent.
+    const knownAIModels: AIModel[] = ["llama-3.3-70b-versatile", "moonshot-v1-8k"];
+    if (model && knownAIModels.includes(model as AIModel)) {
+      try {
+        // Extract plain commit messages (input may be objects or strings)
+        const messages: string[] = (commits || []).map((c: any) => {
+          if (!c) return "";
+          if (typeof c === "string") return c;
+          return c.message || c.commit?.message || String(c);
+        });
+
+        const md = await generateChangelog(messages, model as AIModel, repo || "project");
+        return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      } catch (err) {
+        console.error("AI generateChangelog failed:", err);
+        return NextResponse.json({ error: "Generation failed" }, { status: 500 });
+      }
+    }
+
     const readable = new ReadableStream({
       async start(controller) {
         try {
