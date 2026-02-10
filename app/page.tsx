@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import LinkGitHub from "../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
+import QuickSearch from "../components/QuickSearch";
 
 import ScrollHint from "../components/ScrollHint";
 
