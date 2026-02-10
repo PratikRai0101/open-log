@@ -8,7 +8,7 @@
   <p><strong>An open-source, AI-native release manager for developers.</strong></p>
 
   <p>
-    <a href="https://openlog.vercel.app">Live Demo</a>
+    <a href="https://open-log.vercel.app">Live Demo</a>
     · <a href="https://github.com/PratikRai0101/open-log/issues">Report Bug / Request Feature</a>
   </p>
 </div>
