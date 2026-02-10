@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createChangelog } from "@/app/actions";
 import { AIModel } from "@/lib/ai";
 import { Loader2, Sparkles, Brain } from "lucide-react";
+import ModelSelector from "@/components/ModelSelector";
 
 export default function Generator({ repoName }: { repoName: string }) {
   const [model, setModel] = useState<AIModel>("llama-3.3-70b-versatile");
@@ -25,14 +26,9 @@ export default function Generator({ repoName }: { repoName: string }) {
     <div className="flex flex-col gap-4 mt-4">
       <div className="flex gap-2">
         {/* Model Selector */}
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value as AIModel)}
-          className="bg-zinc-900 border border-zinc-700 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
-          <option value="kimi-k2-turbo-preview">🧠 Moonshot (Kimi) - High Quality</option>
-        </select>
+        <div className="w-72">
+          <ModelSelector value={model} onChange={(v: string) => setModel(v as AIModel)} />
+        </div>
 
         {/* Generate Button */}
         <button

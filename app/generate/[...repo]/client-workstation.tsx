@@ -26,6 +26,7 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { publishRelease } from "@/app/actions";
+import ModelSelector from "@/components/ModelSelector";
 
 export type SimpleCommit = {
   hash: string;
@@ -472,15 +473,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
                <div className="flex items-center gap-2">
                   {/* Model selector dropdown (editor toolbar) */}
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value as any)}
-                    className="bg-[#0A0A0B] text-xs text-zinc-300 border border-white/5 rounded px-2 py-1"
-                  >
-                    <option value="gemini">🔮 Google Gemini (Streaming)</option>
-                    <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
-                    <option value="kimi-k2-turbo-preview">🧠 Kimi2 (Moonshot) - High Quality</option>
-                  </select>
+                   <div className="">
+                     <ModelSelector value={selectedModel} onChange={(v: string) => setSelectedModel(v as any)} />
+                   </div>
                  <PenLine size={12} className="text-zinc-600"/>
                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
                </div>
