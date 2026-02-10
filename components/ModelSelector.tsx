@@ -16,7 +16,8 @@ const MODELS: ModelOption[] = [
     id: "gemini",
     name: "Google Gemini",
     badge: "Streaming",
-    iconUrl: "/icons/google-gemini.svg",
+    // use external jsdelivr CDN icons so dropdown can load them remotely
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/google-gemini.svg",
     icon: (
       // Star-like Gemini glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -34,7 +35,7 @@ const MODELS: ModelOption[] = [
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
     badge: "Fast",
-    iconUrl: "/icons/grok-dark.svg",
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grok-dark.svg",
     icon: (
       // Lightning / G glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -46,7 +47,7 @@ const MODELS: ModelOption[] = [
     id: "kimi-k2-turbo-preview",
     name: "Kimi2 (Moonshot)",
     badge: "High Quality",
-    iconUrl: "/icons/kimi-ai.svg",
+    iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/kimi-ai.svg",
     icon: (
       // Crescent glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
