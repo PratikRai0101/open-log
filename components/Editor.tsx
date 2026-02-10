@@ -6,6 +6,7 @@ import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useEffect, useState, forwardRef, useImperativeHandle, useRef } from "react";
+import "./editor-theme.css";
 
 interface EditorProps {
   initialMarkdown: string;

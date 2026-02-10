@@ -1,0 +1,102 @@
+/* BlockNote editor theme for OpenLog — dark, compact, and visually consistent */
+:root {
+  /* core colors — tweak if you want stronger accents */
+  --openlog-bg: #0A0A0B;
+  --openlog-surface: #0F1011;
+  --openlog-text: #E6E6E7;
+  --openlog-muted: #9CA3AF;
+  --openlog-accent: #7DD3FC;
+  --openlog-code-bg: #0B1020;
+}
+
+/* Apply a consistent background and type scale to common BlockNote roots */
+.blocknote-root,
+.bn-root,
+.bn-container,
+.bn-editor,
+.bn-view {
+  background-color: var(--openlog-bg) !important;
+  color: var(--openlog-text) !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Editor content spacing that matches the surrounding card */
+.bn-editor__content,
+.bn-view__content,
+.blocknote-editor {
+  padding: 0.5rem 0.5rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Typography / colors */
+.bn-editor__content p,
+.bn-view__content p {
+  color: var(--openlog-text) !important;
+}
+.bn-editor__content a,
+.bn-view__content a {
+  color: var(--openlog-accent) !important;
+}
+
+/* Code blocks and inline code */
+.bn-editor__content code,
+.bn-view__content code,
+.bn-editor__content pre,
+.bn-view__content pre {
+  background: var(--openlog-code-bg) !important;
+  color: var(--openlog-text) !important;
+}
+
+/* Read-only adjustments when the container uses the bn-readonly helper class */
+.bn-readonly .bn-editor__content,
+.bn-readonly .bn-view__content,
+.bn-readonly .blocknote-editor {
+  caret-color: transparent !important; /* hide caret */
+}
+.bn-readonly .bn-placeholder,
+.bn-readonly .bn-editor__placeholder,
+.bn-readonly .bn-view__placeholder {
+  display: none !important; /* hide editable placeholders in preview */
+}
+
+/* Hide floating editing affordances in preview */
+.bn-readonly .bn-floating-toolbar,
+.bn-readonly .bn-inline-toolbar,
+.bn-readonly .bn-block-handle,
+.bn-readonly .bn-toolbar,
+.bn-readonly .bn-color-picker {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Make selections subtle in preview to avoid visual noise */
+.bn-readonly ::selection {
+  background: rgba(125,211,252,0.12) !important;
+}
+
+/* Small polish: slightly reduce list and blockquote opacity in preview */
+.bn-readonly li,
+.bn-readonly blockquote {
+  opacity: 0.95;
+}
+
+/* Ensure images don't overflow */
+.bn-editor__content img,
+.bn-view__content img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Keep tables responsive */
+.bn-editor__content table,
+.bn-view__content table {
+  width: 100% !important;
+  overflow: auto;
+  display: block;
+}
+
+/* Small animation on load to make editor feel polished */
+.bn-root,
+.blocknote-root {
+  transition: background-color 160ms linear, color 160ms linear;
+}
