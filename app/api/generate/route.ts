@@ -163,7 +163,6 @@ ${chunkLines.join("\n")}
     // requires provider API keys. This prevents attempts to call the Google
     // Generative REST endpoint without credentials which returns 403.
     if (!process.env.GOOGLE_API_KEY || !useGemini) {
-      console.info("API generate: falling back to Groq path (Gemini disabled). GOOGLE_API_KEY present=", !!process.env.GOOGLE_API_KEY);
       try {
         const messages: string[] = (commits || []).map((c: any) => {
           if (!c) return "";
@@ -174,15 +173,13 @@ ${chunkLines.join("\n")}
         // Use the Groq-compatible path to generate a single changelog for the
         // entire commit set. This preserves UX while avoiding Gemini calls.
         const md = await generateChangelog(messages, "llama-3.3-70b-versatile", repo || "project");
-        console.info("API generate: Groq returned length=", (md || "").length);
-        console.debug("API generate: preview:", (md || "").slice(0, 256));
 
         // Emulate the streaming protocol the client expects by returning a
         // ReadableStream that emits control JSON markers (~~JSON~~...) and the
-        // generated markdown in small chunks. Sending the markdown in smaller
-        // pieces (per-line / per-chunk) helps the client's typewriter flusher
-        // reveal content in a more natural way while preserving the streaming
-        // contract used by the Gemini path.
+        // generated markdown in small chunks. We stream the markdown first so
+        // the client's flusher can reveal it progressively, then emit a final
+        // marker followed by the merged markdown so the client performs a
+        // final replacement (parity with the Gemini flow).
         const readable = new ReadableStream({
           async start(controller) {
             try {
@@ -192,14 +189,8 @@ ${chunkLines.join("\n")}
               // chunk info
               controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
 
-              // chunk finished - client will know this chunk is done
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
-
-              // final marker -> client will replace prior content with following payload
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
-
-              // Stream the markdown body in smaller sub-chunks. Split by lines,
-              // then further chunk long lines to avoid sending huge blobs at once.
+              // Stream the markdown body in smaller sub-chunks so the client
+              // sees incremental data and the flusher can reveal it gradually.
               const body = md || "";
               const lines = body.split(/\r?\n/);
               const CHUNK_SIZE = 120; // characters per streamed chunk
@@ -217,6 +208,15 @@ ${chunkLines.join("\n")}
                 // append newline after the line
                 controller.enqueue(encoder.encode("\n"));
               }
+
+              // Notify client that this chunk finished
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
+
+              // final marker -> client will replace prior content with merged payload
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
+
+              // Send merged content as the final replacement (post-processed parity)
+              controller.enqueue(encoder.encode(body));
 
               controller.close();
             } catch (err) {
