@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "assistant:commit": "bash ./scripts/assistant-commit.sh"
+    "lint": "eslint"
   },
   "dependencies": {
     "@blocknote/core": "^0.46.2",
