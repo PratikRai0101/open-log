@@ -58,6 +58,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const editorRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
+  const [editingVersion, setEditingVersion] = useState(false);
+  const [versionDraft, setVersionDraft] = useState(versionTag);
+  const versionInputRef = useRef<HTMLInputElement | null>(null);
 
   const filteredCommits = initialCommits.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -75,6 +78,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
   // Load autosaved draft on mount (if any)
   useEffect(() => {
+    setVersionDraft(versionTag);
     try {
       const key = `openlog:changelog:${repoName}`;
       if (typeof window !== "undefined") {
@@ -440,14 +444,41 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         <div className="flex-1 bg-[#0A0A0B] border border-white/10 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
            {/* Editor Toolbar (Inside the card) */}
            <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-[#0A0A0B]">
-              <div className="flex items-center gap-3">
-                 <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-xs text-zinc-400 font-mono">release_notes.md</div>
-                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-bold tracking-wider">DRAFT</span>
-              </div>
-              <div className="flex items-center gap-2">
-                 <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
-                    <Copy size={12}/> Copy
-                 </button>
+        <div className="flex items-center gap-3">
+           <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-xs text-zinc-400 font-mono">release_notes.md</div>
+           <div className="flex items-center gap-2">
+             {!editingVersion ? (
+               <div className="flex items-baseline gap-2">
+                 <span className="text-[10px] text-zinc-400 font-mono">Release Notes</span>
+                 <button onClick={() => { setEditingVersion(true); setTimeout(() => versionInputRef.current?.focus(), 20); }} className="text-[#FF4F4F] font-bold">{versionTag}</button>
+               </div>
+             ) : (
+               <div className="flex items-center gap-2">
+                 <input ref={versionInputRef} value={versionDraft} onChange={(e) => setVersionDraft(e.target.value)} className="bg-[#0A0A0B] border border-white/10 px-2 py-1 rounded text-xs text-white" />
+                 <button onClick={() => { setVersionTag(versionDraft || versionTag); setEditingVersion(false); }} className="px-2 py-1 bg-white/5 rounded text-xs">Save</button>
+                 <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(false); }} className="px-2 py-1 text-xs text-zinc-400">Cancel</button>
+               </div>
+             )}
+           </div>
+           <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-bold tracking-wider">DRAFT</span>
+        </div>
+           <div className="flex items-center gap-2">
+              <button onClick={async () => {
+                try {
+                  if (editorRef.current && typeof editorRef.current.getMarkdown === 'function') {
+                    const md = await editorRef.current.getMarkdown();
+                    await navigator.clipboard.writeText(md);
+                    toast.success('Copied release body to clipboard');
+                  } else if (generated) {
+                    await navigator.clipboard.writeText(generated);
+                    toast.success('Copied release body to clipboard');
+                  }
+                } catch (e) {
+                  toast.error('Copy failed');
+                }
+              }} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
+                 <Copy size={12}/> Copy
+              </button>
                  <button onClick={handleGenerate} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
                     <RotateCcw size={12}/> Regenerate
                  </button>
