@@ -54,6 +54,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const previewRef = useRef<HTMLDivElement | null>(null);
   const polishedTimerRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  // flusher used by streaming typewriter logic; declared here so finally blocks can access it
+  let flusher: number | null = null;
   const [showPolishedBadge, setShowPolishedBadge] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -248,9 +250,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
       // Typewriter buffer/flusher for smooth streaming.
       // Different models get different pacing to avoid feeling laggy.
-      let revealBuffer = "";
-      let displayed = "";
-      let flusher: number | null = null;
+       let revealBuffer = "";
+       let displayed = "";
       const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
       const flushInterval = isGemma ? 40 : 80; // ms between UI updates
       const charsPerTick = isGemma ? 6 : 18; // characters revealed per tick

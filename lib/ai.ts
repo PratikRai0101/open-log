@@ -1,25 +1,8 @@
 import OpenAI from "openai";
 
-// 1. Initialize Groq (Fast)
-if (!process.env.GROQ_API_KEY) {
-  console.warn("GROQ_API_KEY not set — Groq generation will fail if requested");
-}
-const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY || undefined,
-  baseURL: "https://api.groq.com/openai/v1",
-});
-
-// 2. Moonshot/Kimi: use the OpenAI-compatible client pointed at Moonshot's
-// baseURL (per Moonshot quickstart). This mirrors the example usage where
-// `new OpenAI({ baseURL: 'https://api.moonshot.ai/v1' })` is used and
-// `client.chat.completions.create(...)` is called.
-if (!process.env.MOONSHOT_API_KEY) {
-  console.warn("MOONSHOT_API_KEY not set — Moonshot/Kimi generation will fail if requested");
-}
-const moonshot = new OpenAI({
-  apiKey: process.env.MOONSHOT_API_KEY || undefined,
-  baseURL: "https://api.moonshot.ai/v1",
-});
+// NOTE: Do not instantiate OpenAI clients at module load time because the
+// library throws when no API key is present. We lazily construct a client
+// inside `generateChangelog` so builds work when provider keys are absent.
 
 export type AIModel = "llama-3.3-70b-versatile" | "kimi-k2-turbo-preview";
 
@@ -46,6 +29,7 @@ export async function generateChangelog(commits: string[], model: AIModel, proje
 
       if (model.includes("llama")) {
         if (!process.env.GROQ_API_KEY) throw new Error("Missing GROQ_API_KEY environment variable");
+        const groq = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: "https://api.groq.com/openai/v1" });
         // Groq/OpenAI-compatible SDK usage
         response = await groq.chat.completions.create({
           model: model,
@@ -53,6 +37,7 @@ export async function generateChangelog(commits: string[], model: AIModel, proje
         });
       } else {
         if (!process.env.MOONSHOT_API_KEY) throw new Error("Missing MOONSHOT_API_KEY environment variable");
+        const moonshot = new OpenAI({ apiKey: process.env.MOONSHOT_API_KEY, baseURL: "https://api.moonshot.ai/v1" });
         // Use the Moonshot/OpenAI-compatible client to create a chat completion.
         // Include a short system prompt that identifies the assistant as Kimi
         // per Moonshot's quickstart example.
