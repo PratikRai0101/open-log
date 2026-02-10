@@ -201,6 +201,37 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     };
   }, [editable]);
 
+  // Global capture: some BlockNote builds render outside our container (portal).
+  // Register window-level capture handlers to prevent input for any BlockNote root
+  // on the page when this editor is in read-only mode.
+  useEffect(() => {
+    function blockIfBlocknoteTarget(e: Event) {
+      if (editable) return;
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      try {
+        if (t.closest && t.closest('.blocknote-root')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    window.addEventListener('beforeinput', blockIfBlocknoteTarget as EventListener, true);
+    window.addEventListener('keydown', blockIfBlocknoteTarget as EventListener, true);
+    window.addEventListener('paste', blockIfBlocknoteTarget as EventListener, true);
+    window.addEventListener('drop', blockIfBlocknoteTarget as EventListener, true);
+
+    return () => {
+      window.removeEventListener('beforeinput', blockIfBlocknoteTarget as EventListener, true);
+      window.removeEventListener('keydown', blockIfBlocknoteTarget as EventListener, true);
+      window.removeEventListener('paste', blockIfBlocknoteTarget as EventListener, true);
+      window.removeEventListener('drop', blockIfBlocknoteTarget as EventListener, true);
+    };
+  }, [editable]);
+
   // Change handler: try to use BlockNote's onChange via BlockNoteView; fallback to polling
   useEffect(() => {
     if (!editor) return;
