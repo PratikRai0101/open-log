@@ -149,11 +149,6 @@ ${chunkLines.join("\n")}
     // generated markdown as a single response (non-streaming) to keep the
     // client experience consistent.
     const knownAIModels: (AIModel | 'gemma-27b-it')[] = ["llama-3.3-70b-versatile", "kimi-k2-turbo-preview", 'gemma-27b-it'];
-    // For non-Gemini models (Groq / Moonshot) we still want to stream the
-    // response back to the client character-by-character so the editor shows a
-    // typing effect. generateChangelog may return the full text at once, so
-    // wrap it in a ReadableStream that emits per-character and the same JSON
-    // control markers the client expects.
     if (model && knownAIModels.includes(model as any) && model !== 'gemma-27b-it') {
       try {
         // Extract plain commit messages (input may be objects or strings)
@@ -163,33 +158,27 @@ ${chunkLines.join("\n")}
           return c.message || c.commit?.message || String(c);
         });
 
+        // Generate the changelog synchronously (provider-specific SDKs may not
+        // support streaming in our current wrapper). To provide a smooth typing
+        // experience regardless of provider, stream the final output one
+        // character at a time to the client. This emulates an LLM typing
+        // experience for Groq and Kimi without changing provider calls.
         const md = await generateChangelog(messages, model as AIModel, repo || "project");
 
         const readable = new ReadableStream({
-          async start(controller) {
+          start(controller) {
             try {
+              // send small meta header so client knows total length
+              controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ meta: { totalChars: md.length } }) + "\n"));
               const encoder = new TextEncoder();
-              // meta header
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: (commits || []).length, totalChunks: 1 } }) + "\n"));
-              // chunk header
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
-
-              // Stream one character at a time for a typing effect
               for (let i = 0; i < md.length; i++) {
                 controller.enqueue(encoder.encode(md.charAt(i)));
               }
-
-              // chunk done
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
-
-              // final marker + merged content so client can perform a replace
-              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
-              controller.enqueue(encoder.encode(md));
               controller.close();
-            } catch (err) {
-              controller.error(err as Error);
+            } catch (e) {
+              controller.error(e as Error);
             }
-          },
+          }
         });
 
         return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
