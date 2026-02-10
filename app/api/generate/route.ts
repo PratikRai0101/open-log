@@ -182,7 +182,10 @@ ${chunkLines.join("\n")}
             // Small per-chunk delay to visually throttle Groq's extremely fast
             // token stream (Groq/Llama can finish the whole output in <100ms).
             // Allow override via GROQ_STREAM_DELAY_MS env var for tuning.
-            const GROQ_STREAM_DELAY_MS = Number(process.env.GROQ_STREAM_DELAY_MS) || 15;
+            // Default to 40ms to slow Groq's extremely fast token stream so the
+            // frontend shows a visible typewriter effect. Can be overridden via
+            // the GROQ_STREAM_DELAY_MS env var for tuning.
+            const GROQ_STREAM_DELAY_MS = Number(process.env.GROQ_STREAM_DELAY_MS) || 40;
             for await (const part of chatCompletion as any) {
                     try {
                       const text = (part?.choices?.[0]?.delta?.content) || (part?.choices?.[0]?.delta?.text) || part?.text || part?.content || '';
