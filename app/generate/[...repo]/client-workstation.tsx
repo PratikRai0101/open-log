@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import TextSkeleton from "@/components/TextSkeleton";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
@@ -244,6 +245,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const decoder = new TextDecoder();
       let partial = "";
       let expectFinalReplace = false;
+      // show loading skeleton while receiving content
+      setGenerated("");
+      setIsGenerating(true);
 
       const replaceGenerated = (newText: string, polished = false) => {
         try {
@@ -277,7 +281,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         }
       };
 
-      while (true) {
+       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
@@ -311,14 +315,14 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         }
 
         // Normal content
-        if (expectFinalReplace) {
+         if (expectFinalReplace) {
           // Replace with final merged content and preserve scroll
           partial = chunk;
           replaceGenerated(partial, true);
           expectFinalReplace = false;
         } else {
-          partial += chunk;
-          setGenerated(partial);
+           partial += chunk;
+           setGenerated(partial);
         }
       }
     } catch (err) {
@@ -629,7 +633,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
            {/* Editor Canvas */}
             <div className="flex-1 overflow-hidden relative">
-               {generated ? (
+                {isGenerating && !generated ? (
+                   <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
+                      <TextSkeleton lines={12} />
+                   </div>
+                ) : generated ? (
                   <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
                      {/* Document Title Header */}
                      <div className="shrink-0 mb-8 pb-4 border-b border-white/5">
