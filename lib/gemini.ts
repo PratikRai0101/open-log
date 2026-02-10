@@ -33,3 +33,29 @@ export const DEFAULT_CHUNK_SIZE = Number(process.env.COMMIT_CHUNK_SIZE) || 20;
 // Generation defaults (can be tuned via env)
 export const DEFAULT_TEMPERATURE = Number(process.env.GENERATION_TEMPERATURE) || 0.2;
 export const DEFAULT_MAX_OUTPUT_TOKENS = Number(process.env.GENERATION_MAX_TOKENS) || 1024;
+
+// Resolve a usable Gemini model for the current API key.
+// Returns the configured DEFAULT_MODEL when available, otherwise returns the
+// first available model from the API. If the API cannot be queried, returns
+// DEFAULT_MODEL as a fallback.
+export async function resolveModel() {
+  if (!apiKey) {
+    console.warn("GOOGLE_API_KEY missing; using DEFAULT_MODEL:", DEFAULT_MODEL);
+    return DEFAULT_MODEL;
+  }
+  try {
+    const available = await listModels();
+    if (!available || available.length === 0) {
+      console.warn("No Gemini models returned from listModels(); using DEFAULT_MODEL:", DEFAULT_MODEL);
+      return DEFAULT_MODEL;
+    }
+    const found = available.find((m: string) => m.includes(DEFAULT_MODEL) || m === DEFAULT_MODEL);
+    if (found) return found;
+    // Prefer the first explicit model name returned by the API
+    console.warn("Configured GEMINI_MODEL not available; falling back to:", available[0]);
+    return available[0];
+  } catch (err) {
+    console.warn("Failed to resolve Gemini model, using DEFAULT_MODEL:", DEFAULT_MODEL, err);
+    return DEFAULT_MODEL;
+  }
+}

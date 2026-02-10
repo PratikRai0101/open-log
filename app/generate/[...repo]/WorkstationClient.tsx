@@ -118,48 +118,75 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No readable stream from server");
 
-      const decoder = new TextDecoder();
-      // Read the stream iteratively; handle embedded JSON control lines for progress.
+       const decoder = new TextDecoder();
+       let buffer = ""; // accumulate to handle control markers that may span reads
+       // Read the stream iteratively; handle embedded JSON control lines for progress.
       // track progress based on chunks
       let totalChunks = 0;
       let completedChunks = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        // The server prefixes progress/control JSON lines with a marker `~~JSON~~`.
-        if (chunk.startsWith("~~JSON~~")) {
-          // Might contain multiple lines; process each
-          const lines = chunk.split(/\n+/).filter(Boolean);
-          for (const ln of lines) {
-            if (!ln.startsWith("~~JSON~~")) continue;
-            try {
-              const obj = JSON.parse(ln.replace(/^~~JSON~~/, ""));
-              if (obj.meta) {
-                totalChunks = obj.meta.totalChunks || totalChunks;
-                setTotalChunksState(totalChunks);
-              }
-              if (obj.chunkIndex !== undefined) {
-                // server announced this chunk will stream next
-                setCurrentChunkState(obj.chunkIndex);
-              }
-              if (obj.chunkDone !== undefined) {
-                completedChunks = Math.max(completedChunks, obj.chunkDone + 1);
-                setCompletedChunksState(completedChunks);
-                // clear current chunk
-                setCurrentChunkState(null);
-              }
-            } catch (e) {
-              // ignore malformed control JSON
-            }
-          }
-          continue;
-        }
+       while (true) {
+         const { done, value } = await reader.read();
+         if (done) break;
+         const chunk = decoder.decode(value, { stream: true });
+         buffer += chunk;
+         // Process buffer looking for control markers `~~JSON~~<json>\n`.
+         const marker = "~~JSON~~";
+         while (true) {
+           const idx = buffer.indexOf(marker);
+           if (idx === -1) {
+             // No marker found. To handle markers split across reads, keep the
+             // last (marker.length - 1) characters in the buffer and flush the
+             // rest as normal content.
+             const keep = Math.max(0, marker.length - 1);
+             if (buffer.length > keep) {
+               const flush = buffer.slice(0, buffer.length - keep);
+               partial += flush;
+               setGenerated(partial);
+               buffer = buffer.slice(buffer.length - keep);
+             }
+             break;
+           }
 
-        // Normal content - append immediately for live streaming
-        partial += chunk;
-        setGenerated(partial);
-      }
+           // Flush any content before the marker as normal text
+           if (idx > 0) {
+             const before = buffer.slice(0, idx);
+             partial += before;
+             setGenerated(partial);
+             buffer = buffer.slice(idx);
+           }
+
+           // Now buffer starts with the marker; find the newline that ends the JSON
+           const nl = buffer.indexOf("\n", marker.length);
+           if (nl === -1) {
+             // Wait for the rest of the JSON line in the next read
+             break;
+           }
+
+           const jsonText = buffer.slice(marker.length, nl);
+           try {
+             const obj = JSON.parse(jsonText);
+             if (obj.meta) {
+               totalChunks = obj.meta.totalChunks || totalChunks;
+               setTotalChunksState(totalChunks);
+             }
+             if (obj.chunkIndex !== undefined) {
+               setCurrentChunkState(obj.chunkIndex);
+             }
+             if (obj.chunkDone !== undefined) {
+               completedChunks = Math.max(completedChunks, obj.chunkDone + 1);
+               setCompletedChunksState(completedChunks);
+               setCurrentChunkState(null);
+             }
+           } catch (e) {
+             // ignore malformed control JSON
+           }
+
+           // Remove processed JSON line from buffer and continue loop to find more
+           buffer = buffer.slice(nl + 1);
+         }
+         // If any plain text remains in the buffer and it's small (less than marker
+         // length), we keep it for the next read; otherwise it will be flushed above
+       }
       // Mark generation as complete (stream finished normally)
       setIsComplete(true);
       // Clear controller after successful finish

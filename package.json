@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "assistant:commit": "bash ./scripts/assistant-commit.sh"
   },
   "dependencies": {
     "@blocknote/core": "^0.46.2",
@@ -14,6 +15,7 @@
     "@blocknote/react": "^0.46.2",
     "@clerk/nextjs": "^6.37.3",
     "@clerk/themes": "^2.4.51",
+    "@google/genai": "^1.40.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.95.3",
     "ai": "^6.0.77",

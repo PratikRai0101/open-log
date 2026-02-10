@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels } from "../../../lib/gemini";
+import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels, resolveModel } from "../../../lib/gemini";
 import { generateChangelog, AIModel } from "@/lib/ai";
 import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
 
@@ -127,21 +127,18 @@ ${chunkLines.join("\n")}
       return outSections.join("\n\n");
     }
 
-    // If using the Gemini path (Google) ensure the configured model exists
-    // — a 404 from the Google API usually means the model resource isn't found
-    // for the provided API key. We can list available models to help debug.
+    // If using the Gemini path (Google) resolve a usable model name for the
+    // configured API key. This will fall back to DEFAULT_MODEL if listing
+    // fails or the configured model isn't available.
     const useGemini = !model || model === 'gemini';
+    let geminiModel = DEFAULT_MODEL;
     if (useGemini) {
       try {
-        const available = await listModels();
-        // If DEFAULT_MODEL isn't in the available list, return an informative error.
-        const found = available.find((m: string) => m.includes(DEFAULT_MODEL) || m === DEFAULT_MODEL);
-        if (!found) {
-          console.error("Requested Gemini model not found:", DEFAULT_MODEL, "available:", available.slice(0,20));
-          return NextResponse.json({ error: `Gemini model '${DEFAULT_MODEL}' not found for your API key.`, availableModels: available }, { status: 400 });
-        }
+        geminiModel = await resolveModel();
+        if (!geminiModel) geminiModel = DEFAULT_MODEL;
       } catch (err) {
-        console.warn("Could not list Gemini models to validate configured model:", err);
+        console.warn("Could not resolve Gemini model; using DEFAULT_MODEL:", err);
+        geminiModel = DEFAULT_MODEL;
       }
     }
 
@@ -184,7 +181,7 @@ ${chunkLines.join("\n")}
             // Fallback: call the Google Generative REST endpoint per-chunk
             // (some SDK builds may not expose streaming on the returned model).
             const gkey = process.env.GOOGLE_API_KEY;
-            const genEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_MODEL}:generateText`;
+                const genEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateText`;
 
             controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkIndex, chunkLines: chunkLines.length }) + "\n"));
 
@@ -193,17 +190,21 @@ ${chunkLines.join("\n")}
               // Use the official Google GenAI client to generate content for Gemini
               // in a single request per chunk. This mirrors the quickstart pattern.
               let gRes;
-              try {
-                const genResp = await genAI.models.generateContent({
-                  model: DEFAULT_MODEL,
-                  contents: p,
-                  // generation config fields may vary; we pass text only here
-                } as any);
+                 try {
+                 const genResp = await genAI.models.generateContent({
+                   model: geminiModel,
+                   contents: p,
+                   // generation config fields may vary; we pass text only here
+                 } as any);
                 // genResp.text or genResp.output may contain the result
                 const parsed = (genResp as any).text || (genResp as any).output?.[0]?.content?.map((c: any) => c.text || "").join("");
                 if (parsed) {
                   currentChunkText = parsed;
-                  controller.enqueue(new TextEncoder().encode(currentChunkText));
+                  // Stream one character at a time to emulate typing behavior
+                  const encoder = new TextEncoder();
+                  for (let i = 0; i < currentChunkText.length; i++) {
+                    controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
+                  }
                 }
               } catch (err) {
                 // Fallback to REST call if SDK fails
@@ -236,8 +237,14 @@ ${chunkLines.join("\n")}
                   }
                   if (!text && typeof j.output === 'string') text = j.output;
                   if (!text && typeof j.text === 'string') text = j.text;
-                  currentChunkText = text || "";
-                  if (currentChunkText) controller.enqueue(new TextEncoder().encode(currentChunkText));
+                   currentChunkText = text || "";
+                   if (currentChunkText) {
+                     // Stream per-character for a smoother typing effect
+                     const encoder = new TextEncoder();
+                     for (let i = 0; i < currentChunkText.length; i++) {
+                       controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
+                     }
+                   }
                 }
               }
             } catch (err) {
