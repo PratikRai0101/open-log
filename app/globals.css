@@ -589,3 +589,34 @@ body{
 .bn-list-item .bn-list-marker {
   display: none !important;
 }
+
+/* Aggressive fallback: some BlockNote builds render native <ul>/<li> inside editor.
+   Turn off list-style and markers inside BlockNote roots to ensure only our
+   decorative timeline dot is visible. This is scoped to blocknote roots to
+   avoid affecting other app lists. */
+.blocknote-root ul,
+.blocknote-root ol,
+.bn-editor__content ul,
+.bn-editor__content ol,
+.bn-view__content ul,
+.bn-view__content ol {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+.blocknote-root li,
+.bn-editor__content li,
+.bn-view__content li {
+  list-style: none !important;
+}
+.blocknote-root li::marker,
+.bn-editor__content li::marker,
+.bn-view__content li::marker {
+  display: none !important;
+  color: transparent !important;
+}
+
+/* Some builds create marker elements with class names containing 'marker' */
+[class*="marker"] {
+  -webkit-user-select: none !important;
+}
