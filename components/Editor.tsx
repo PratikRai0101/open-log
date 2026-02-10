@@ -20,6 +20,8 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   const createdRef = /*#__PURE__*/ { current: null } as any;
   const lastPushedRef = /*#__PURE__*/ { current: null } as any;
   const suppressOnChangeRef = /*#__PURE__*/ { current: false } as any;
+  const autosaveTimerRef = useRef<number | null>(null);
+  const [lastSavedAtLocal, setLastSavedAtLocal] = useState<number | null>(null);
   const domRetryRef = useRef<{ timer: number | null; attempts: number }>({ timer: null, attempts: 0 });
   const enforceIntervalRef = useRef<number | null>(null);
 
@@ -155,6 +157,28 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
       }
     }
   }), [editor, initialMarkdown]);
+
+  // Auto-save draft to localStorage whenever content changes (debounced). We save
+  // the markdown representation to keep it simple and portable across versions.
+  useEffect(() => {
+    if (!editor) return;
+    // clear previous timer
+    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      try {
+        const md = await (editor as any).blocksToMarkdownLossy(editor.document);
+        const key = `openlog_draft_${window.location.pathname.split('/').pop() || 'default'}`;
+        localStorage.setItem(key, md);
+        setLastSavedAtLocal(Date.now());
+      } catch (e) {
+        // noop
+      }
+    }, 900) as unknown as number;
+
+    return () => {
+      if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    };
+  }, [editor]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
