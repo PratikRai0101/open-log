@@ -456,34 +456,22 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden relative">
-              {generated ? (
-            viewMode === "preview" ? (
-              // PREVIEW MODE
-              <div ref={previewRef} className="h-full overflow-y-auto p-8 custom-scrollbar">
-                <div className="max-w-3xl mx-auto bg-[#0A0A0B] border border-white/10 rounded-xl p-8 shadow-2xl relative">
-                  {showPolishedBadge && (
-                    <div className="absolute right-6 top-6 bg-emerald-700/90 text-white px-3 py-1 rounded-md text-xs font-medium shadow-md">
-                      Polished
-                    </div>
-                  )}
-                  <div className="prose prose-invert prose-sm max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-400 prose-li:text-zinc-300">
-                    <ReactMarkdown>{generated}</ReactMarkdown>
-                  </div>
-                </div>
-              </div>
+          <div className="h-full p-4 overflow-hidden">
+            {generated ? (
+              <Editor
+                ref={editorRef}
+                initialMarkdown={generated}
+                onChange={(val: string) => setGenerated(val)}
+                editable={viewMode === "edit"}
+              />
             ) : (
-              // EDIT MODE — BlockNote rich editor
-              <div className="h-full overflow-y-auto custom-scrollbar p-4">
-                <Editor ref={editorRef} initialMarkdown={generated} onChange={(val: string) => setGenerated(val)} />
+              // EMPTY STATE
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-8">
+                <Sparkles size={32} className="text-zinc-500 mb-4" />
+                <p className="text-sm text-zinc-500">Select commits and click Generate</p>
               </div>
-            )
-          ) : (
-            // EMPTY STATE
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-8">
-              <Sparkles size={32} className="text-zinc-500 mb-4" />
-              <p className="text-sm text-zinc-500">Select commits and click Generate</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
     </div>
