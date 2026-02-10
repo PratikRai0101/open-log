@@ -9,8 +9,9 @@ export default function SignInCatchAll() {
   // a catch-all route ([[...rest]]) avoids the runtime error described earlier.
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-300 relative">
-      {/* position the sign-in modal vertically centered and inset from the right */}
-      <div className="absolute right-24 top-1/2 transform -translate-y-1/2 w-full max-w-md p-6">
+      {/* position the sign-in modal vertically centered and anchored to the right
+          by placing its center at ~75% of the viewport width for a "middle-right" feel */}
+      <div className="absolute top-1/2 left-3/4 transform -translate-y-1/2 -translate-x-1/2 max-w-md w-full p-6">
         <SignIn routing="path" path="/sign-in" />
       </div>
     </div>
