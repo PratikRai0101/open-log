@@ -253,12 +253,12 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
        let revealBuffer = "";
        let displayed = "";
        const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
-       // For Groq fallback (non-streaming model emulation) we want the flusher
-       // to reveal characters more aggressively so the user sees progressive
-       // typing. Keep smaller interval and higher reveal rate for gemma-like
-       // models, otherwise use a moderate pacing that feels like typing.
-       const flushInterval = isGemma ? 40 : 45; // ms between UI updates
-       const charsPerTick = isGemma ? 6 : 12; // characters revealed per tick
+       const isLlama = String(selectedModel || "").toLowerCase().includes("llama");
+       // Tune flusher: Llama should feel fast and smooth. Gemma (Google) is
+       // tokenized differently; keep a slightly different pacing. Defaults are
+       // conservative to avoid janky updates on slow devices.
+       const flushInterval = isGemma ? 40 : isLlama ? 30 : 50; // ms between UI updates
+       const charsPerTick = isGemma ? 6 : isLlama ? 18 : 12; // characters revealed per tick
 
        const startFlusher = () => {
          if (flusher) return;
@@ -276,6 +276,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
              // dynamic pacing: reveal more characters if buffer grows to avoid backlog
              const dynamicChars = isGemma
                ? Math.max(2, Math.min(12, Math.floor(revealBuffer.length / 6) + 1))
+               : isLlama
+               ? Math.max(6, Math.min(48, Math.floor(revealBuffer.length / 6) + charsPerTick))
                : Math.max(4, Math.min(32, Math.floor(revealBuffer.length / 6) + charsPerTick));
 
              const take = revealBuffer.slice(0, dynamicChars);

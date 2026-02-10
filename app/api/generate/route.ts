@@ -151,6 +151,49 @@ ${chunkLines.join("\n")}
         });
 
         const md = await generateChangelog(messages, model as AIModel, repo || "project");
+
+        // If the selected model is a Llama variant, emulate a fast token-like
+        // streaming experience by sending small chunks with short delays so the
+        // client-side flusher can reveal text like a typewriter. This does not
+        // change the final content; we still send a final marker and the full
+        // merged body at the end for parity with the Gemini flow.
+        if (String(model).toLowerCase().includes('llama')) {
+          const readable = new ReadableStream({
+            async start(controller) {
+              try {
+                const encoder = new TextEncoder();
+                controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: messages.length, totalChunks: 1 } }) + "\n"));
+                controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
+
+                const body = md || "";
+                const CHUNK_SIZE = 40; // small chunks for fast Llama reveal
+                const SLEEP_MS = 22; // small delay between chunks
+
+                for (let i = 0; i < body.length; i += CHUNK_SIZE) {
+                  const part = body.slice(i, i + CHUNK_SIZE);
+                  controller.enqueue(encoder.encode(part));
+                  // small pause to mimic streaming tokens
+                  // eslint-disable-next-line no-await-in-loop
+                  await new Promise((res) => setTimeout(res, SLEEP_MS));
+                }
+
+                // allow the client a brief moment to flush revealed text
+                await new Promise((res) => setTimeout(res, 80));
+
+                // notify chunk done and final replacement (merged content)
+                controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
+                controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
+                controller.enqueue(encoder.encode(body));
+                controller.close();
+              } catch (err) {
+                controller.error(err as Error);
+              }
+            }
+          });
+          return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
+
+        // Non-llama models: return full response (existing behavior)
         return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       } catch (err) {
         console.error("AI generateChangelog failed:", err);
