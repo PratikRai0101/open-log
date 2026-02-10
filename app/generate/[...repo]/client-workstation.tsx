@@ -404,9 +404,19 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
          </div>
 
          <div className="flex items-center gap-3">
-            <div className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-mono text-zinc-400">{versionTag || "v0.0.0"}</div>
-            <div className="size-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs text-zinc-400 border border-white/5"><User size={14}/></div>
-            <button onClick={() => setEditingVersion(true)} className="ml-3 text-xs text-zinc-400 border border-white/5 px-2 py-1 rounded">Edit</button>
+            {editingVersion ? (
+              <div className="flex items-center gap-2">
+                <input ref={versionInputRef} value={versionDraft} onChange={e => setVersionDraft(e.target.value)} className="bg-[#0B0B0C] border border-white/10 px-3 py-1 rounded text-sm text-white focus:outline-none" />
+                <button onClick={() => { setVersionTag(versionDraft); setEditingVersion(false); toast.success('Version updated'); }} className="px-3 py-1 bg-[#0A0A0B] border border-white/10 rounded text-sm text-emerald-300">Save</button>
+                <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(false); }} className="px-3 py-1 bg-transparent border border-white/5 rounded text-sm text-zinc-400">Cancel</button>
+              </div>
+            ) : (
+              <>
+                <div className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-mono text-zinc-400">{versionTag || "v0.0.0"}</div>
+                <div className="size-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs text-zinc-400 border border-white/5"><User size={14}/></div>
+                <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(true); }} className="ml-3 text-xs text-zinc-400 border border-white/5 px-2 py-1 rounded">Edit</button>
+              </>
+            )}
          </div>
       </header>
 
