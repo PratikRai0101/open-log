@@ -19,7 +19,8 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [visible, setVisible] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<RepoShort[]>([]);
+  // results now include match indices for fuzzy highlighting
+  const [results, setResults] = useState<Array<{ r: RepoShort; nameMatches: number[]; descMatches?: number[] }>>([]);
   const [active, setActive] = useState(0);
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
 
@@ -77,7 +78,7 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
         setActive((i) => Math.max(0, i - 1));
       } else if (ev.key === 'Enter') {
         ev.preventDefault();
-        const sel = results[active];
+        const sel = results[active]?.r;
         if (sel) window.location.href = `/generate/${sel.full_name}`;
       }
     };
@@ -112,35 +113,115 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
+  // simple fuzzy matcher that finds characters of pattern in order inside text
+  function fuzzyMatch(text: string, pattern: string) {
+    const t = text.toLowerCase();
+    const p = pattern.toLowerCase();
+    const indices: number[] = [];
+    let ti = 0;
+    for (let pi = 0; pi < p.length; pi++) {
+      const ch = p[pi];
+      let found = false;
+      while (ti < t.length) {
+        if (t[ti] === ch) {
+          indices.push(ti);
+          ti++;
+          found = true;
+          break;
+        }
+        ti++;
+      }
+      if (!found) return null;
+    }
+    // score: earlier start is better, denser match (short span) is better, exact substring boosts
+    const start = indices[0] ?? 0;
+    const end = indices[indices.length - 1] ?? 0;
+    const span = end - start + 1;
+    let score = 100 - start; // earlier is better
+    score += Math.max(0, 50 - span); // denser is better
+    // substring boost
+    if (t.includes(p)) score += 80;
+    return { indices, score };
+  }
+
   function performSearch(q: string) {
     if (!q) {
       setResults([]);
       setActive(0);
       return;
     }
-    const needle = q.trim().toLowerCase();
-    const scored = initialRepos.map((r) => {
-      const name = (r.name || '').toLowerCase();
-      const desc = (r.description || '').toLowerCase();
-      let score = 0;
-      if (name === needle) score += 100;
-      else if (name.startsWith(needle)) score += 70;
-      else if (name.includes(needle)) score += 40;
-      if (desc.startsWith(needle)) score += 30;
-      else if (desc.includes(needle)) score += 10;
-      // recency boost
+
+    const needle = q.trim();
+    if (!needle) {
+      setResults([]);
+      setActive(0);
+      return;
+    }
+
+    const scored: Array<{ r: RepoShort; score: number; nameMatches: number[]; descMatches?: number[]; updated: number }> = [];
+
+    for (const r of initialRepos) {
+      const name = r.name || '';
+      const desc = r.description || '';
+      let totalScore = 0;
+      let nameMatches: number[] = [];
+      let descMatches: number[] | undefined = undefined;
+
+      const mName = fuzzyMatch(name, needle);
+      if (mName) {
+        totalScore += mName.score + 100; // prefer name matches
+        nameMatches = mName.indices;
+      }
+      const mDesc = fuzzyMatch(desc, needle);
+      if (mDesc) {
+        totalScore += mDesc.score;
+        descMatches = mDesc.indices;
+      }
+
+      // if neither matched, skip
+      if (!nameMatches.length && !descMatches?.length) continue;
+
       const updated = r.updated_at ? Date.parse(r.updated_at) : 0;
-      return { r, score, updated };
-    });
+      scored.push({ r, score: totalScore, nameMatches, descMatches, updated });
+    }
 
     scored.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return (b.updated || 0) - (a.updated || 0);
     });
 
-    setResults(scored.slice(0, 8).map((s) => s.r));
+    setResults(scored.slice(0, 8).map((s) => ({ r: s.r, nameMatches: s.nameMatches, descMatches: s.descMatches })));
     setActive(0);
     setVisible(true);
+  }
+
+  function renderHighlighted(text: string, indices?: number[]) {
+    if (!text) return <>{text}</>;
+    if (!indices || indices.length === 0) return <>{text}</>;
+    const parts: Array<{ str: string; match: boolean }> = [];
+    const set = new Set(indices);
+    for (let i = 0; i < text.length; i++) {
+      const isMatch = set.has(i);
+      if (i === 0) {
+        parts.push({ str: text[0], match: isMatch });
+        continue;
+      }
+      const prevMatch = set.has(i - 1);
+      if (isMatch === prevMatch) {
+        parts[parts.length - 1].str += text[i];
+      } else {
+        parts.push({ str: text[i], match: isMatch });
+      }
+    }
+    return (
+      <>
+        {parts.map((p, idx) => (
+          <span key={idx} className={p.match ? 'text-amber-300 font-semibold' : ''}>
+            {p.str}
+          </span>
+        ))}
+      </>
+    );
   }
 
   // click outside to dismiss
@@ -164,20 +245,20 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
         {visible && results.length > 0 && (
           <div className="max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
             <ul role="listbox" className="outline-none">
-              {results.map((r, i) => (
+              {results.map((item, i) => (
                 <li
-                  key={r.id}
+                  key={item.r.id}
                   role="option"
                   aria-selected={i === active}
                   onMouseEnter={() => setActive(i)}
-                  onClick={() => (window.location.href = `/generate/${r.full_name}`)}
+                  onClick={() => (window.location.href = `/generate/${item.r.full_name}`)}
                   className={`px-3 py-2 cursor-pointer ${i === active ? 'bg-white/6' : 'hover:bg-white/3'}`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{r.name}</div>
-                    <div className="text-xs text-zinc-500">{r.full_name.split('/')[0]}</div>
+                    <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{renderHighlighted(item.r.name || '', item.nameMatches)}</div>
+                    <div className="text-xs text-zinc-500">{(item.r.full_name || '').split('/')[0]}</div>
                   </div>
-                  {r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{r.description}</div>}
+                  {item.r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{renderHighlighted(item.r.description || '', item.descMatches)}</div>}
                 </li>
               ))}
             </ul>
@@ -193,20 +274,20 @@ export default function QuickSearch({ initialRepos = [], inline = false }: Quick
       {visible && results.length > 0 && (
         <div className="mt-2 max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1" style={{ width: pos?.width ?? 420 }}>
           <ul role="listbox" className="outline-none">
-            {results.map((r, i) => (
+            {results.map((item, i) => (
               <li
-                key={r.id}
+                key={item.r.id}
                 role="option"
                 aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
-                onClick={() => (window.location.href = `/generate/${r.full_name}`)}
+                onClick={() => (window.location.href = `/generate/${item.r.full_name}`)}
                 className={`px-3 py-2 cursor-pointer ${i === active ? 'bg-white/6' : 'hover:bg-white/3'}`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{r.name}</div>
-                  <div className="text-xs text-zinc-500">{r.full_name.split('/')[0]}</div>
+                  <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{renderHighlighted(item.r.name || '', item.nameMatches)}</div>
+                  <div className="text-xs text-zinc-500">{(item.r.full_name || '').split('/')[0]}</div>
                 </div>
-                {r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{r.description}</div>}
+                {item.r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{renderHighlighted(item.r.description || '', item.descMatches)}</div>}
               </li>
             ))}
           </ul>

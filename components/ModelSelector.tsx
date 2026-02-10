@@ -16,7 +16,7 @@ const MODELS: ModelOption[] = [
     id: "gemini",
     name: "Google Gemini",
     badge: "Streaming",
-    iconUrl: "/icons/gemini.svg",
+    iconUrl: "/icons/google-gemini.svg",
     icon: (
       // Star-like Gemini glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -34,7 +34,7 @@ const MODELS: ModelOption[] = [
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
     badge: "Fast",
-    iconUrl: "/icons/groq.svg",
+    iconUrl: "/icons/grok-dark.svg",
     icon: (
       // Lightning / G glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -46,7 +46,7 @@ const MODELS: ModelOption[] = [
     id: "kimi-k2-turbo-preview",
     name: "Kimi2 (Moonshot)",
     badge: "High Quality",
-    iconUrl: "/icons/kimi.svg",
+    iconUrl: "/icons/kimi-ai.svg",
     icon: (
       // Crescent glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -101,8 +101,21 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
         aria-haspopup
         aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 flex items-center justify-center">{selectedModel.icon}</div>
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 flex items-center justify-center">
+              {selectedModel.iconUrl && !failedIcons[selectedModel.id] ? (
+                <img
+                  src={selectedModel.iconUrl}
+                  alt={selectedModel.name}
+                  className="w-6 h-6 object-cover rounded-full ring-1 ring-white/6 shadow-sm"
+                  onError={() => setFailedIcons((s) => ({ ...s, [selectedModel.id]: true }))}
+                />
+              ) : (
+                <div className="w-6 h-6 flex items-center justify-center rounded-full ring-1 ring-white/6 shadow-sm overflow-hidden">
+                  {selectedModel.icon}
+                </div>
+              )}
+            </div>
           <div className="flex flex-col text-left">
             <span className="text-xs font-medium text-zinc-200 truncate">{selectedModel.name}</span>
             <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wide">{selectedModel.badge}</span>
@@ -131,17 +144,17 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
           >
             <div className="flex items-center gap-3">
                 <div className="w-5 h-5 flex items-center justify-center">
-                  {model.iconUrl && !failedIcons[model.id] ? (
-                    <img
-                      src={model.iconUrl}
-                      alt={model.name}
-                      className="w-5 h-5 object-contain rounded"
-                      onError={() => setFailedIcons((s) => ({ ...s, [model.id]: true }))}
-                      loading="lazy"
-                    />
-                  ) : (
-                    model.icon
-                  )}
+                   {model.iconUrl && !failedIcons[model.id] ? (
+                     <img
+                       src={model.iconUrl}
+                       alt={model.name}
+                       className="w-6 h-6 object-cover rounded-full ring-1 ring-white/6 shadow-sm"
+                       onError={() => setFailedIcons((s) => ({ ...s, [model.id]: true }))}
+                       loading="lazy"
+                     />
+                   ) : (
+                     <div className="w-6 h-6 flex items-center justify-center rounded-full ring-1 ring-white/6 shadow-sm overflow-hidden">{model.icon}</div>
+                   )}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-zinc-200">{model.name}</span>
