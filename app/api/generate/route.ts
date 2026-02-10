@@ -180,10 +180,13 @@ ${chunkLines.join("\n")}
                 // allow the client a brief moment to flush revealed text
                 await new Promise((res) => setTimeout(res, 80));
 
-                // notify chunk done and final replacement (merged content)
+                // notify chunk done and final marker. We DO NOT send the merged
+                // body again here — the client will have progressively revealed
+                // the same content from the streamed chunks. Avoiding a final
+                // replacement prevents an immediate full-content overwrite
+                // that would defeat the typewriter effect.
                 controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
                 controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
-                controller.enqueue(encoder.encode(body));
                 controller.close();
               } catch (err) {
                 controller.error(err as Error);
