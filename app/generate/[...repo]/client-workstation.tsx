@@ -260,18 +260,20 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
        const flushInterval = isGemma ? 40 : isLlama ? 30 : 50; // ms between UI updates
        const charsPerTick = isGemma ? 6 : isLlama ? 18 : 12; // characters revealed per tick
 
-       const startFlusher = () => {
-         if (flusher) return;
-         flusher = window.setInterval(() => {
-           try {
-             if (!revealBuffer) {
-               // nothing to reveal; stop until new data arrives
-               if (flusher) {
-                 clearInterval(flusher as number);
-                 flusher = null;
-               }
-               return;
-             }
+      const startFlusher = () => {
+          if (flusher) return;
+          if (process.env.NODE_ENV !== 'production') console.debug('[stream] flusher started');
+          flusher = window.setInterval(() => {
+            try {
+              if (!revealBuffer) {
+                // nothing to reveal; stop until new data arrives
+                if (flusher) {
+                  clearInterval(flusher as number);
+                  flusher = null;
+                  if (process.env.NODE_ENV !== 'production') console.debug('[stream] flusher stopped (empty buffer)');
+                }
+                return;
+              }
 
              // dynamic pacing: reveal more characters if buffer grows to avoid backlog
              const dynamicChars = isGemma
@@ -345,24 +347,27 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            const idx = streamBuf.indexOf("~~JSON~~");
            if (idx === -1) break;
 
-           // Any text before the marker is normal content -> reveal progressively
-           if (idx > 0) {
-             const textBefore = streamBuf.slice(0, idx);
-             if (expectFinalReplace) {
-               partial = textBefore;
-               revealBuffer = "";
-               displayed = partial;
-               if (flusher) {
-                 clearInterval(flusher as number);
-                 flusher = null;
-               }
-               replaceGenerated(partial, true);
-               expectFinalReplace = false;
-             } else {
-               revealBuffer += textBefore;
-               startFlusher();
-             }
-           }
+            // Any text before the marker is normal content -> reveal progressively
+            if (idx > 0) {
+              const textBefore = streamBuf.slice(0, idx);
+              if (process.env.NODE_ENV !== 'production') console.debug('[stream] received textBefore len=', textBefore.length, 'snippet=', textBefore.slice(0,80));
+              if (expectFinalReplace) {
+                partial = textBefore;
+                revealBuffer = "";
+                displayed = partial;
+                if (flusher) {
+                  clearInterval(flusher as number);
+                  flusher = null;
+                  if (process.env.NODE_ENV !== 'production') console.debug('[stream] flusher stopped (final replace)');
+                }
+                replaceGenerated(partial, true);
+                expectFinalReplace = false;
+              } else {
+                revealBuffer += textBefore;
+                if (process.env.NODE_ENV !== 'production') console.debug('[stream] appended to revealBuffer len=', revealBuffer.length);
+                startFlusher();
+              }
+            }
 
            // Try to extract the JSON block following the marker. Wait for a newline
            // that terminates the JSON payload; if not present yet, wait for more data.
@@ -377,23 +382,25 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            // Advance streamBuf past the processed marker+payload+newline
            streamBuf = rest.slice(nl + 1);
 
-           try {
-             if (jsonText) {
-               const obj = JSON.parse(jsonText);
-               if (obj.meta) setTotalChunks(obj.meta.totalChunks || 0);
-               if (obj.chunkIndex !== undefined) setCurrentChunk(obj.chunkIndex);
-               if (obj.chunkDone !== undefined) {
-                 setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
-                 setCurrentChunk(null);
-               }
-               if (obj.final) {
-                 // next non-control content should replace instead of append
-                 expectFinalReplace = true;
-               }
-             }
-           } catch (e) {
-             // ignore malformed JSON — continue processing remaining buffer
-           }
+            try {
+              if (jsonText) {
+                const obj = JSON.parse(jsonText);
+                if (process.env.NODE_ENV !== 'production') console.debug('[stream] control obj=', obj);
+                if (obj.meta) setTotalChunks(obj.meta.totalChunks || 0);
+                if (obj.chunkIndex !== undefined) setCurrentChunk(obj.chunkIndex);
+                if (obj.chunkDone !== undefined) {
+                  setCompletedChunks((prev) => Math.max(prev, obj.chunkDone + 1));
+                  setCurrentChunk(null);
+                }
+                if (obj.final) {
+                  // next non-control content should replace instead of append
+                  expectFinalReplace = true;
+                  if (process.env.NODE_ENV !== 'production') console.debug('[stream] final marker received');
+                }
+              }
+            } catch (e) {
+              // ignore malformed JSON — continue processing remaining buffer
+            }
          }
 
          // After processing markers, whatever remains in streamBuf is normal text.
