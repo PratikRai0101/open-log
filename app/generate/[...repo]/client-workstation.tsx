@@ -393,7 +393,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden min-h-0 min-w-0">
       {/* GLOBAL HEADER */}
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
