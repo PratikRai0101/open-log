@@ -395,7 +395,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
              <Link href="/" className="text-zinc-500 hover:text-zinc-300 transition-colors"><ArrowLeft size={16} /></Link>
-             <span className="font-bold text-zinc-100 tracking-tight">ShipLog</span>
+             <span className="font-bold text-zinc-100 tracking-tight">OpenLog</span>
              <span className="text-zinc-700">/</span>
              <span className="text-sm text-zinc-400 font-mono truncate max-w-[200px]">{repoName}</span>
           </div>

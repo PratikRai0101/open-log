@@ -105,8 +105,16 @@ ${chunkLines.join("\n")}
         // Deduplicate lines
         const seen = new Set<string>();
         const filtered = [] as string[];
+        // Clean up list markers inside each line to avoid double-bullets
         for (const it of items) {
-          const trimmed = it.trim();
+          let trimmed = it.trim();
+          if (!trimmed) continue;
+
+          // Replace runs of mixed bullet-like chars at the start with a single '- '
+          // Covers: • ◦ ° ○ * - and combinations like '- •' or '• -'
+          // then normalize multiple leading dashes to a single '- '
+          trimmed = trimmed.replace(/^([\-\*]\s*)?[\u2022\u25E6\u00B0\u25E6\u2023\u2024\u2219\u00B7\u25CB\u25CF\s\-\*]+/, '- ');
+
           if (!trimmed) continue;
           if (seen.has(trimmed)) continue;
           seen.add(trimmed);
