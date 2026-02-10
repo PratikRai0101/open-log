@@ -9,14 +9,11 @@ const groq = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
-// 2. Initialize Moonshot/Kimi (Smart & Big Context)
+// 2. Moonshot/Kimi: use direct REST calls to match Moonshot quickstart
 if (!process.env.MOONSHOT_API_KEY) {
   console.warn("MOONSHOT_API_KEY not set — Moonshot/Kimi generation will fail if requested");
 }
-const moonshot = new OpenAI({
-  apiKey: process.env.MOONSHOT_API_KEY || undefined,
-  baseURL: "https://api.moonshot.cn/v1",
-});
+const MOONSHOT_ENDPOINT = "https://api.moonshot.ai/v1/chat/completions";
 
 export type AIModel = "llama-3.3-70b-versatile" | "moonshot-v1-8k";
 
@@ -50,11 +47,25 @@ export async function generateChangelog(commits: string[], model: AIModel, proje
         });
       } else {
         if (!process.env.MOONSHOT_API_KEY) throw new Error("Missing MOONSHOT_API_KEY environment variable");
-        response = await moonshot.chat.completions.create({
+        // Moonshot Kimi expects REST POST to their chat completions endpoint.
+        const payload = {
           model: model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.3,
+        };
+        const res = await fetch(MOONSHOT_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.MOONSHOT_API_KEY}`,
+          },
+          body: JSON.stringify(payload),
         });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`Moonshot API error: ${res.status} ${txt}`);
+        }
+        response = await res.json();
       }
 
       // Normalize response shapes
