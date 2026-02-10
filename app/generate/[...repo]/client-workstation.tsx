@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
 import { 
@@ -264,7 +265,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   async function handlePublish() {
     if (!generated) return;
     if (!versionTag) {
-      alert("Please enter a version tag (e.g. v1.0.0)");
+      toast.error("Please enter a version tag (e.g. v1.0.0)");
       return;
     }
 
@@ -294,15 +295,21 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         } catch (e) {
           // noop
         }
-        if (confirm("🚀 Release Published Successfully! View on GitHub?")) {
-          window.open((result as any).url, "_blank");
-        }
+
+        toast.success("Release Published Successfully!", {
+          description: `Version ${versionTag} is now live.`,
+          action: {
+            label: "View on GitHub",
+            onClick: () => window.open((result as any).url, "_blank"),
+          },
+          duration: 5000,
+        });
       } else {
-        alert("Error: " + ((result as any).error || JSON.stringify(result)));
+        toast.error("Publish Failed", { description: (result as any).error });
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong.");
+      toast.error("Something went wrong.");
     } finally {
       setIsGenerating(false);
     }
