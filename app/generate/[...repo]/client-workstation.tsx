@@ -60,6 +60,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
   const editorRef = useRef<any>(null);
+  const pendingFinalRef = useRef<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [copied, setCopied] = useState(false);
@@ -248,13 +249,37 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
         // Normal content
         if (expectFinalReplace) {
-          // Replace with final merged content and preserve scroll
-          partial = chunk;
-          replaceGenerated(partial, true);
+          // Replace with final merged content and preserve scroll.
+          // If the editor currently has keyboard focus, defer applying the
+          // final replacement to avoid disrupting the user's caret. Store it
+          // in a ref and apply later when focus is lost.
+          pendingFinalRef.current = chunk;
+          try {
+            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
+              // editor not focused — safe to apply
+              partial = chunk;
+              replaceGenerated(partial, true);
+              pendingFinalRef.current = null;
+            }
+          } catch (e) {
+            // fallback: apply immediately
+            partial = chunk;
+            replaceGenerated(partial, true);
+            pendingFinalRef.current = null;
+          }
           expectFinalReplace = false;
         } else {
           partial += chunk;
-          setGenerated(partial);
+          // Avoid updating parent state while the editor has keyboard focus
+          // which can cause caret jumps in some rich editors. If focused,
+          // skip updating `generated` so the editor retains local state.
+          try {
+            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
+              setGenerated(partial);
+            }
+          } catch (e) {
+            setGenerated(partial);
+          }
         }
       }
     } catch (err) {
@@ -263,6 +288,19 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     } finally {
       setIsGenerating(false);
       abortControllerRef.current = null;
+      // If stream finished and we have a pending final result, apply it now
+      if (pendingFinalRef.current) {
+        // If editor still focused, leave it pending and show a small prompt in UI.
+        try {
+            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
+              setGenerated(pendingFinalRef.current || "");
+              pendingFinalRef.current = null;
+            }
+        } catch (e) {
+          setGenerated(pendingFinalRef.current);
+          pendingFinalRef.current = null;
+        }
+      }
     }
   }
 

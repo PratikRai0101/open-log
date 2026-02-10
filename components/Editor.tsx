@@ -100,6 +100,12 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     let cancelled = false;
     (async () => {
       try {
+        // If the editor is currently focused and editable, avoid programmatic
+        // replacements — this prevents cursor jumps while the user types.
+        // We only apply incoming updates when the editor is not focused.
+        if (editable && containerRef.current && document.activeElement && containerRef.current.contains(document.activeElement)) {
+          return;
+        }
         // If the parent already pushed this exact markdown, skip.
         if (initialMarkdown === lastPushedRef.current) return;
         if (initialMarkdown && typeof (editor as any).tryParseMarkdownToBlocks === "function") {
@@ -129,6 +135,17 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
         return await (editor as any).blocksToMarkdownLossy(editor.document);
       } catch (e) {
         return initialMarkdown || "";
+      }
+    }
+    ,
+    // Expose a small helper so parent can detect if the editor currently has
+    // keyboard focus. This helps avoid parent updates overwriting the user's
+    // live typing/caret position during streaming updates.
+    hasFocus: () => {
+      try {
+        return !!(containerRef.current && document.activeElement && containerRef.current.contains(document.activeElement));
+      } catch (e) {
+        return false;
       }
     }
   }), [editor, initialMarkdown]);
@@ -331,6 +348,17 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     const interval = setInterval(async () => {
       try {
         if (suppressOnChangeRef.current) return;
+        // If the editor has keyboard focus, avoid emitting onChange to the
+        // parent while typing — this can trigger parent state updates that
+        // re-render and cause caret jumps in the editor. Defer emitting until
+        // the editor loses focus.
+        try {
+          if (editable && containerRef.current && document.activeElement && containerRef.current.contains(document.activeElement)) {
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
         const markdown = await (editor as any).blocksToMarkdownLossy(editor.document);
         if (!cancelled) onChange(markdown);
       } catch (e) {
