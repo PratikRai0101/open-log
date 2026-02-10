@@ -26,7 +26,6 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { publishRelease } from "@/app/actions";
-import ModelSelector from "@/components/ModelSelector";
 
 export type SimpleCommit = {
   hash: string;
@@ -60,7 +59,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
   const editorRef = useRef<any>(null);
-  const pendingFinalRef = useRef<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [copied, setCopied] = useState(false);
@@ -249,37 +247,13 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
         // Normal content
         if (expectFinalReplace) {
-          // Replace with final merged content and preserve scroll.
-          // If the editor currently has keyboard focus, defer applying the
-          // final replacement to avoid disrupting the user's caret. Store it
-          // in a ref and apply later when focus is lost.
-          pendingFinalRef.current = chunk;
-          try {
-            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
-              // editor not focused — safe to apply
-              partial = chunk;
-              replaceGenerated(partial, true);
-              pendingFinalRef.current = null;
-            }
-          } catch (e) {
-            // fallback: apply immediately
-            partial = chunk;
-            replaceGenerated(partial, true);
-            pendingFinalRef.current = null;
-          }
+          // Replace with final merged content and preserve scroll
+          partial = chunk;
+          replaceGenerated(partial, true);
           expectFinalReplace = false;
         } else {
           partial += chunk;
-          // Avoid updating parent state while the editor has keyboard focus
-          // which can cause caret jumps in some rich editors. If focused,
-          // skip updating `generated` so the editor retains local state.
-          try {
-            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
-              setGenerated(partial);
-            }
-          } catch (e) {
-            setGenerated(partial);
-          }
+          setGenerated(partial);
         }
       }
     } catch (err) {
@@ -288,19 +262,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     } finally {
       setIsGenerating(false);
       abortControllerRef.current = null;
-      // If stream finished and we have a pending final result, apply it now
-      if (pendingFinalRef.current) {
-        // If editor still focused, leave it pending and show a small prompt in UI.
-        try {
-            if (!(editorRef.current && typeof editorRef.current.hasFocus === 'function' && editorRef.current.hasFocus())) {
-              setGenerated(pendingFinalRef.current || "");
-              pendingFinalRef.current = null;
-            }
-        } catch (e) {
-          setGenerated(pendingFinalRef.current);
-          pendingFinalRef.current = null;
-        }
-      }
     }
   }
 
@@ -431,7 +392,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden min-h-0 min-w-0">
+    <div className="h-screen w-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden">
       {/* GLOBAL HEADER */}
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
@@ -465,10 +426,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       </header>
 
       {/* MAIN WORKSPACE */}
-      {/* ADDED min-h-0 to prevent vertical push out of screen */}
-      <div className="flex-1 flex overflow-hidden relative z-10 min-h-0">
+      <div className="flex-1 flex overflow-hidden relative z-10">
         {/* SIDEBAR: Full Height, No "Card" Look */}
-          <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0 min-h-0">
+         <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
            {/* Search */}
            <div className="p-4 border-b border-white/5 space-y-3">
               <div className="relative">
@@ -487,35 +447,58 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
               </div>
            </div>
 
-           {/* Minimalist Commit List */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4 min-h-0">
-              {filteredCommits.map(c => {
-                const isSelected = selected.has(c.hash);
-                return (
-                  <div key={c.hash} onClick={() => toggleCommit(c.hash)} 
-                    className={`commit-item px-5 py-4 border-b border-white/2 cursor-pointer transition-colors hover:bg-white/2 ${isSelected ? 'bg-white/4' : ''}`}
-                  >
-                     <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{c.type}</span>
-                        <span className="text-[10px] text-zinc-700 font-mono">{c.hash.substring(0,6)}</span>
-                     </div>
-                     <p className={`text-xs leading-relaxed ${isSelected ? 'text-zinc-200' : 'text-zinc-500'}`}>{c.message}</p>
-                  </div>
-                )
-              })}
-           </div>
+            {/* Minimalist Commit List */}
+             <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
+               {/* Selection header with count */}
+               <div className="px-5 py-3 border-b border-white/6 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                   <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Select Commits</span>
+                   <span className="text-[11px] text-zinc-300 bg-white/3 px-2 py-0.5 rounded text-xs font-mono">{selected.size} selected</span>
+                 </div>
+                 <div>
+                   <button onClick={toggleAll} className="text-[10px] text-zinc-400 bg-transparent border border-white/6 px-2 py-1 rounded hover:bg-white/5">{selected.size === initialCommits.length ? 'Unselect All' : 'Select All'}</button>
+                 </div>
+               </div>
+
+               {filteredCommits.map(c => {
+                 const isSelected = selected.has(c.hash);
+                 return (
+                   <div key={c.hash} onClick={() => toggleCommit(c.hash)} 
+                     className={`commit-item px-5 py-4 border-b border-white/2 cursor-pointer transition-colors hover:bg-white/2 flex items-start gap-3 ${isSelected ? 'bg-white/4' : ''}`}
+                   >
+                      {/* left accent */}
+                      <div className={`w-1 rounded-r h-full mt-1 ${isSelected ? 'bg-rose-500' : 'bg-transparent'}`} />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                           <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{c.type}</span>
+                           <span className="text-[10px] text-zinc-700 font-mono">{c.hash.substring(0,6)}</span>
+                        </div>
+                        <p className={`text-xs leading-relaxed ${isSelected ? 'text-zinc-200' : 'text-zinc-500'}`}>{c.message}</p>
+                      </div>
+                      <div className="flex items-start pl-2">
+                        {isSelected && <Check size={14} className="text-rose-400 mt-1" />}
+                      </div>
+                   </div>
+                 )
+               })}
+            </div>
         </aside>
 
-         {/* EDITOR AREA */}
-          {/* ADDED min-w-0 and min-h-0 to contain horizontal/vertical bleed */}
-          <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0 min-h-0">
+        {/* EDITOR AREA */}
+         <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0">
            {/* Toolbar */}
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
                <div className="flex items-center gap-2">
                   {/* Model selector dropdown (editor toolbar) */}
-                   <div className="">
-                     <ModelSelector value={selectedModel} onChange={(v: string) => setSelectedModel(v as any)} />
-                   </div>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value as any)}
+                    className="bg-[#0A0A0B] text-xs text-zinc-300 border border-white/5 rounded px-2 py-1"
+                  >
+                    <option value="gemini">🔮 Google Gemini (Streaming)</option>
+                    <option value="llama-3.3-70b-versatile">⚡ grog (Llama 3.3) - Fast</option>
+                    <option value="kimi-k2-turbo-preview">🧠 Kimi2 (Moonshot) - High Quality</option>
+                  </select>
                  <PenLine size={12} className="text-zinc-600"/>
                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
                </div>
@@ -527,7 +510,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
                   {/* Regenerate Button */}
                   <button onClick={handleGenerate} disabled={isGenerating || selected.size === 0} className="flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded hover:bg-white/5 disabled:opacity-50">
-                     <RotateCcw size={12} className={isGenerating ? "animate-spin" : ""}/> Regenerate
+                     <RotateCcw size={12} className={isGenerating ? "animate-spin" : ""}/> Generate
                   </button>
 
                   {/* Publish Button (Red Brand Color) */}
@@ -537,11 +520,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                </div>
             </div>
 
-            {/* Editor Canvas */}
-             {/* Changed to allow internal scrolling here, hiding horizontal overflow */}
-             <div className="flex-1 overflow-y-auto overflow-x-hidden relative min-h-0 custom-scrollbar">
+           {/* Editor Canvas */}
+            <div className="flex-1 overflow-hidden relative">
                {generated ? (
-                   <div className="min-h-full flex flex-col px-12 pt-8">
+                  <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
                      {/* Document Title Header */}
                      <div className="shrink-0 mb-8 pb-4 border-b border-white/5">
                         <h1 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">Release Notes <span className="text-[#FF4F4F]">{versionTag}</span></h1>
@@ -550,7 +532,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                         </div>
                      </div>
                      {/* The Editor */}
-                      <div className="flex-1 relative min-h-0 pb-20">
+                     <div className="flex-1 relative min-h-0 pb-10">
                         <Editor 
                           ref={editorRef}
                           initialMarkdown={generated} 
