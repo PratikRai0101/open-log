@@ -252,39 +252,43 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       // Different models get different pacing to avoid feeling laggy.
        let revealBuffer = "";
        let displayed = "";
-      const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
-      const flushInterval = isGemma ? 40 : 80; // ms between UI updates
-      const charsPerTick = isGemma ? 6 : 18; // characters revealed per tick
+       const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
+       // For Groq fallback (non-streaming model emulation) we want the flusher
+       // to reveal characters more aggressively so the user sees progressive
+       // typing. Keep smaller interval and higher reveal rate for gemma-like
+       // models, otherwise use a moderate pacing that feels like typing.
+       const flushInterval = isGemma ? 40 : 45; // ms between UI updates
+       const charsPerTick = isGemma ? 6 : 12; // characters revealed per tick
 
-      const startFlusher = () => {
-        if (flusher) return;
-        flusher = window.setInterval(() => {
-          try {
-            if (!revealBuffer) {
-              // nothing to reveal; stop until new data arrives
-              if (flusher) {
-                clearInterval(flusher as number);
-                flusher = null;
-              }
-              return;
-            }
+       const startFlusher = () => {
+         if (flusher) return;
+         flusher = window.setInterval(() => {
+           try {
+             if (!revealBuffer) {
+               // nothing to reveal; stop until new data arrives
+               if (flusher) {
+                 clearInterval(flusher as number);
+                 flusher = null;
+               }
+               return;
+             }
 
-            // dynamic pacing: reveal more characters if buffer grows to avoid backlog
-            const dynamicChars = isGemma
-              ? Math.max(2, Math.min(12, Math.floor(revealBuffer.length / 6) + 1))
-              : Math.max(6, Math.min(40, Math.floor(revealBuffer.length / 4) + 6));
+             // dynamic pacing: reveal more characters if buffer grows to avoid backlog
+             const dynamicChars = isGemma
+               ? Math.max(2, Math.min(12, Math.floor(revealBuffer.length / 6) + 1))
+               : Math.max(4, Math.min(32, Math.floor(revealBuffer.length / 6) + charsPerTick));
 
-            const take = revealBuffer.slice(0, dynamicChars);
-            revealBuffer = revealBuffer.slice(take.length);
-            displayed += take;
+             const take = revealBuffer.slice(0, dynamicChars);
+             revealBuffer = revealBuffer.slice(take.length);
+             displayed += take;
 
-            // Batch UI updates to the next animation frame to reduce layout thrash
-            requestAnimationFrame(() => replaceGenerated(displayed, false));
-          } catch (e) {
-            // ignore flusher errors
-          }
-        }, flushInterval) as unknown as number;
-      };
+             // Batch UI updates to the next animation frame to reduce layout thrash
+             requestAnimationFrame(() => replaceGenerated(displayed, false));
+           } catch (e) {
+             // ignore flusher errors
+           }
+         }, flushInterval) as unknown as number;
+       };
 
       // show loading skeleton while receiving content
       setGenerated("");
