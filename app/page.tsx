@@ -56,7 +56,7 @@ export default async function Dashboard() {
       {/* Main Content - Added extra padding-top to ensure nothing is hidden behind header */}
       <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-white/5 focus:px-3 focus:py-2 focus:rounded">Skip to content</a>
 
-      <main id="content" className="max-w-3xl mx-auto px-6 pt-20 pb-20 relative z-10">
+      <main id="content" className="max-w-3xl mx-auto px-6 pt-20 pb-20 relative z-10 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
         <div className="text-center mb-12">
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/2 border border-white/5 text-[11px] font-medium text-zinc-400 mb-6 backdrop-blur-md">
