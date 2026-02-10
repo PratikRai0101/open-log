@@ -504,11 +504,14 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     <div
       ref={containerRef}
       className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 relative ${!editable ? 'opacity-90 bn-readonly' : ''}`}>
-      <BlockNoteView
-        editor={editor}
-        theme="dark"
-        className="min-h-full py-4 pl-4 pr-2"
-      />
+      {/* Scrollable inner region for editor content to show custom scrollbar when overflowing */}
+      <div className="custom-scrollbar h-full overflow-y-auto">
+        <BlockNoteView
+          editor={editor}
+          theme="dark"
+          className="min-h-full py-4 pl-4 pr-2"
+        />
+      </div>
 
       {/* Capture interactions in preview mode with an overlay so BlockNote's
           floating UI (toolbars, block handles) can't be used. The overlay is
