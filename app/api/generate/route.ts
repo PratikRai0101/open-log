@@ -150,13 +150,57 @@ ${chunkLines.join("\n")}
           return c.message || c.commit?.message || String(c);
         });
 
+        // Attempt to stream directly from Groq/Groq SDK for llama model to
+        // provide a raw token-like stream that the client can consume.
+        if (String(model).toLowerCase().includes('llama') && process.env.GROQ_API_KEY) {
+          try {
+            // Dynamically import to avoid build-time failure if the package
+            // isn't installed in the environment.
+            const GroqMod: any = await import('groq-sdk');
+            const GroqClient = GroqMod.Groq || GroqMod.default || GroqMod;
+            const groq = new GroqClient({ apiKey: process.env.GROQ_API_KEY });
+
+            const systemPrompt = `You are an expert technical writer. Convert these git commits into a clean Markdown changelog for ${repo || 'project'}.`;
+            const chatMessages = [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: (commits || []).map((c: any) => (typeof c === 'string' ? c : (c.message || c.commit?.message || ''))).join('\n') },
+            ];
+
+            // Start a streaming chat completion from Groq. Many SDKs expose
+            // an async-iterable when `stream: true` is set.
+            const chatCompletion: any = await groq.chat.completions.create({ messages: chatMessages, model: 'llama-3.3-70b-versatile', stream: true } as any);
+
+            const stream = new ReadableStream({
+              async start(controller) {
+                const encoder = new TextEncoder();
+                try {
+                  for await (const part of chatCompletion as any) {
+                    try {
+                      const text = (part?.choices?.[0]?.delta?.content) || (part?.choices?.[0]?.delta?.text) || part?.text || part?.content || '';
+                      if (text) controller.enqueue(encoder.encode(String(text)));
+                    } catch (e) {
+                      // ignore malformed chunk
+                    }
+                  }
+                } catch (err) {
+                  try { controller.error(err as Error); } catch (e) { /* noop */ }
+                } finally {
+                  try { controller.close(); } catch (e) { /* noop */ }
+                }
+              }
+            });
+
+            return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache, no-transform' } });
+          } catch (err) {
+            // If streaming via groq-sdk isn't available, fall back to emulated stream below.
+          }
+        }
+
         const md = await generateChangelog(messages, model as AIModel, repo || "project");
 
-        // If the selected model is a Llama variant, emulate a fast token-like
-        // streaming experience by sending small chunks with short delays so the
-        // client-side flusher can reveal text like a typewriter. This does not
-        // change the final content; we still send a final marker and the full
-        // merged body at the end for parity with the Gemini flow.
+        // If the selected model is a Llama variant and native streaming failed,
+        // fall back to an emulated fast token-like stream so the client still
+        // gets progressive reveals.
         if (String(model).toLowerCase().includes('llama')) {
           const readable = new ReadableStream({
             async start(controller) {
@@ -166,13 +210,15 @@ ${chunkLines.join("\n")}
                 controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
 
                 const body = md || "";
-                const CHUNK_SIZE = 40; // small chunks for fast Llama reveal
-                const SLEEP_MS = 22; // small delay between chunks
+                // Tuneable streaming parameters: prefer env overrides for testing.
+                const CHUNK_SIZE = Number(process.env.STREAM_CHUNK_SIZE) || 20; // smaller chunks to force incremental arrival
+                const SLEEP_MS = Number(process.env.STREAM_SLEEP_MS) || 55; // delay (ms) between enqueues to avoid coalescing
 
                 for (let i = 0; i < body.length; i += CHUNK_SIZE) {
                   const part = body.slice(i, i + CHUNK_SIZE);
                   controller.enqueue(encoder.encode(part));
-                  // small pause to mimic streaming tokens
+                  // small pause to mimic streaming tokens and give the transport a chance
+                  // to flush partial data instead of coalescing into a single write.
                   // eslint-disable-next-line no-await-in-loop
                   await new Promise((res) => setTimeout(res, SLEEP_MS));
                 }
