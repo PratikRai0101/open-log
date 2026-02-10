@@ -8,6 +8,7 @@ interface ModelOption {
   name: string;
   badge: string;
   icon: React.ReactNode;
+  iconUrl?: string;
 }
 
 const MODELS: ModelOption[] = [
@@ -15,6 +16,7 @@ const MODELS: ModelOption[] = [
     id: "gemini",
     name: "Google Gemini",
     badge: "Streaming",
+    iconUrl: "https://logo.clearbit.com/google.com",
     icon: (
       // Star-like Gemini glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -32,6 +34,7 @@ const MODELS: ModelOption[] = [
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
     badge: "Fast",
+    iconUrl: "https://logo.clearbit.com/groq.com",
     icon: (
       // Lightning / G glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -43,6 +46,7 @@ const MODELS: ModelOption[] = [
     id: "kimi-k2-turbo-preview",
     name: "Kimi2 (Moonshot)",
     badge: "High Quality",
+    iconUrl: "https://logo.clearbit.com/moonshot.com",
     icon: (
       // Crescent glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -62,6 +66,7 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
   // renderMenu lets us keep the menu in the DOM while running a close animation
   const [renderMenu, setRenderMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [failedIcons, setFailedIcons] = useState<Record<string, boolean>>({});
 
   const selectedModel = MODELS.find((m) => m.id === value) || MODELS[0];
 
@@ -116,16 +121,28 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
             ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-1 scale-95 pointer-events-none'}`}
         >
           {MODELS.map((model) => (
-            <button
-              key={model.id}
-              onClick={() => {
-                onChange(model.id);
-                setIsOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left ${value === model.id ? "bg-white/5" : ""}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center">{model.icon}</div>
+          <button
+            key={model.id}
+            onClick={() => {
+              onChange(model.id);
+              setIsOpen(false);
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left ${value === model.id ? "bg-white/5" : ""}`}
+          >
+            <div className="flex items-center gap-3">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  {model.iconUrl && !failedIcons[model.id] ? (
+                    <img
+                      src={model.iconUrl}
+                      alt={model.name}
+                      className="w-5 h-5 object-contain rounded"
+                      onError={() => setFailedIcons((s) => ({ ...s, [model.id]: true }))}
+                      loading="lazy"
+                    />
+                  ) : (
+                    model.icon
+                  )}
+                </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-zinc-200">{model.name}</span>
                   <span className="text-[9px] text-zinc-500 font-mono tracking-wide uppercase">{model.badge}</span>
