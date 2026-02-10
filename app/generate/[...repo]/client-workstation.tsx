@@ -4,18 +4,21 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 const Editor = dynamic(() => import("@/components/Editor"), { ssr: false });
-import { 
-  Check, 
-  GitCommit, 
-  Sparkles, 
-  Copy, 
-  RotateCcw, 
-  FileText, 
-  ChevronLeft, 
-  PenLine, 
+import {
+  Check,
+  GitCommit,
+  Sparkles,
+  Copy,
+  RotateCcw,
+  FileText,
+  ChevronLeft,
+  PenLine,
   Eye,
   Lock,
-  Rocket
+  Rocket,
+  Search,
+  User,
+  Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -53,6 +56,22 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
   const editorRef = useRef<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<string>("ALL");
+
+  const filteredCommits = initialCommits.filter((c) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (activeTab !== "ALL") {
+      if (activeTab === "FEAT" && c.type !== "feat") return false;
+      if (activeTab === "FIX" && c.type !== "fix") return false;
+    }
+    if (!q) return true;
+    return (
+      c.message.toLowerCase().includes(q) ||
+      c.author_name.toLowerCase().includes(q) ||
+      c.hash.toLowerCase().startsWith(q)
+    );
+  });
 
   // Load autosaved draft on mount (if any)
   useEffect(() => {
