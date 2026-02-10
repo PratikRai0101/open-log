@@ -63,6 +63,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [copied, setCopied] = useState(false);
   // versionTag is editable inline
+  const [selectedModel, setSelectedModel] = useState<"llama-3.3-70b-versatile" | "moonshot-v1-8k">("llama-3.3-70b-versatile");
 
   const filteredCommits = initialCommits.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -165,7 +166,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo: repoName, commits: selectedCommits }),
+        body: JSON.stringify({ repo: repoName, commits: selectedCommits, model: selectedModel }),
         signal: controller.signal,
       });
 
@@ -469,6 +470,15 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            {/* Toolbar */}
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
                <div className="flex items-center gap-2">
+                  {/* Model selector dropdown (editor toolbar) */}
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value as any)}
+                    className="bg-[#0A0A0B] text-xs text-zinc-300 border border-white/5 rounded px-2 py-1"
+                  >
+                    <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
+                    <option value="moonshot-v1-8k">🧠 Moonshot (Kimi) - High Quality</option>
+                  </select>
                  <PenLine size={12} className="text-zinc-600"/>
                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
                </div>
