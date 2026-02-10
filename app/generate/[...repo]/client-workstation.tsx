@@ -245,8 +245,46 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const decoder = new TextDecoder();
       let partial = "";
       let expectFinalReplace = false;
-      // when streaming, we'll progressively reveal words — store the current displayed text
+
+      // Typewriter buffer/flusher for smooth streaming.
+      // Different models get different pacing to avoid feeling laggy.
+      let revealBuffer = "";
       let displayed = "";
+      let flusher: number | null = null;
+      const isGemma = String(selectedModel || "").toLowerCase().includes("gem");
+      const flushInterval = isGemma ? 40 : 80; // ms between UI updates
+      const charsPerTick = isGemma ? 6 : 18; // characters revealed per tick
+
+      const startFlusher = () => {
+        if (flusher) return;
+        flusher = window.setInterval(() => {
+          try {
+            if (!revealBuffer) {
+              // nothing to reveal; stop until new data arrives
+              if (flusher) {
+                clearInterval(flusher as number);
+                flusher = null;
+              }
+              return;
+            }
+
+            // dynamic pacing: reveal more characters if buffer grows to avoid backlog
+            const dynamicChars = isGemma
+              ? Math.max(2, Math.min(12, Math.floor(revealBuffer.length / 6) + 1))
+              : Math.max(6, Math.min(40, Math.floor(revealBuffer.length / 4) + 6));
+
+            const take = revealBuffer.slice(0, dynamicChars);
+            revealBuffer = revealBuffer.slice(take.length);
+            displayed += take;
+
+            // Batch UI updates to the next animation frame to reduce layout thrash
+            requestAnimationFrame(() => replaceGenerated(displayed, false));
+          } catch (e) {
+            // ignore flusher errors
+          }
+        }, flushInterval) as unknown as number;
+      };
+
       // show loading skeleton while receiving content
       setGenerated("");
       setIsGenerating(true);
@@ -316,30 +354,36 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
           continue;
         }
 
-         // Normal content
+        // Normal content
          if (expectFinalReplace) {
-           // Replace with final merged content and preserve scroll
-           partial = chunk;
-           replaceGenerated(partial, true);
-           expectFinalReplace = false;
-         } else {
-           partial += chunk;
-           // Try to reveal words progressively for a typewriter-like feel.
-           // We'll split on whitespace and reveal in small batches.
-           const words = partial.split(/(\s+)/);
-           // reveal up to last N tokens to give sense of flow
-           const revealCount = Math.max(6, Math.floor(words.length * 0.08));
-           // build displayed text from tokens
-           displayed = words.slice(0, Math.min(words.length, revealCount)).join("") + (words.length > revealCount ? "" : "");
-           // set generated to displayed to show progressive text, but keep partial in state
-           setGenerated(displayed + (words.length > revealCount ? "" : ""));
-           // schedule a small timeout to append more if more content arrives
-         }
+          // Replace with final merged content and preserve scroll
+          partial = chunk;
+          // stop flusher and reveal fully
+          revealBuffer = "";
+          displayed = partial;
+          if (flusher) {
+            clearInterval(flusher as number);
+            flusher = null;
+          }
+          replaceGenerated(partial, true);
+          expectFinalReplace = false;
+        } else {
+           // Append new content to the reveal buffer and ensure flusher is running
+           revealBuffer += chunk;
+           // Kickstart the flusher which will progressively reveal from revealBuffer
+           startFlusher();
+        }
       }
     } catch (err) {
       console.error(err);
       setGenerated("## Error\nFailed to generate changelog.");
     } finally {
+      // clear any running flusher
+      try {
+        if (flusher) clearInterval(flusher as number);
+      } catch (e) {
+        // noop
+      }
       setIsGenerating(false);
       abortControllerRef.current = null;
     }
@@ -646,9 +690,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             <div className="flex-1 overflow-hidden relative">
                 {isGenerating && !generated ? (
                    <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
-                      <div aria-busy="true" aria-live="polite">
-                        <TextSkeleton lines={12} />
-                      </div>
+                      <TextSkeleton lines={12} />
                    </div>
                 ) : generated ? (
                   <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
