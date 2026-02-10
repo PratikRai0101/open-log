@@ -517,3 +517,20 @@ body{
   border: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 2;
 }
+
+/* Extra selectors to handle BlockNote DOM variations */
+[data-block-type="bulletListItem"],
+.bn-block__content[data-block-type="bulletListItem"],
+.bn-block__content[data-content-type="bulletListItem"],
+.bn-list-item,
+.bn-list-item .bn-block-content,
+[data-content-type*="bullet"] {
+  position: relative;
+}
+
+/* Slightly darker connector for better contrast in minimalist theme */
+.bn-block-content::before,
+[data-block-type="bulletListItem"]::before,
+.bn-list-item::before {
+  background-color: rgba(255,255,255,0.04);
+}
