@@ -5,7 +5,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import { useCreateBlockNote } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle, useRef } from "react";
 
 interface EditorProps {
   initialMarkdown: string;
@@ -75,16 +75,39 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     }
   }), [editor, initialMarkdown]);
 
-  // Toggle editable/read-only mode
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Toggle editable/read-only mode. Some BlockNote builds expose an API; as a fallback
+  // we set the contentEditable attribute on the rendered editor/view content so typing
+  // is disabled in preview mode while still allowing selection and scrolling.
   useEffect(() => {
     if (!editor) return;
     try {
-      // BlockNote editor exposes isEditable in some builds
+      // Try the editor-level API first
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      editor.isEditable = !!editable;
+      if (typeof editor.isEditable !== "undefined") {
+        // @ts-ignore
+        editor.isEditable = !!editable;
+      }
     } catch (e) {
       // ignore
+    }
+
+    // Fallback: set contentEditable on the actual DOM content container inside this component
+    try {
+      const root = containerRef.current;
+      if (root) {
+        const contentEl = root.querySelector('.bn-editor__content, .bn-view__content') as HTMLElement | null;
+        if (contentEl) {
+          contentEl.contentEditable = editable ? 'true' : 'false';
+          // also set aria-readonly for accessibility
+          if (!editable) contentEl.setAttribute('aria-readonly', 'true');
+          else contentEl.removeAttribute('aria-readonly');
+        }
+      }
+    } catch (e) {
+      // ignore DOM fallback failures
     }
   }, [editor, editable]);
 
@@ -122,7 +145,7 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   if (!editor) return <div className="text-zinc-500 p-4">Loading Editor...</div>;
 
   return (
-    <div className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 ${!editable ? 'opacity-90' : ''}`}>
+    <div ref={containerRef} className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 ${!editable ? 'opacity-90' : ''}`}>
       <BlockNoteView
         editor={editor}
         theme="dark"
