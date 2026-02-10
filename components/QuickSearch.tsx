@@ -12,9 +12,10 @@ interface RepoShort {
 
 interface QuickSearchProps {
   initialRepos?: RepoShort[];
+  inline?: boolean; // render dropdown inside the search island when true
 }
 
-export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
+export default function QuickSearch({ initialRepos = [], inline = false }: QuickSearchProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [visible, setVisible] = useState(false);
   const [query, setQuery] = useState('');
@@ -33,8 +34,10 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
         if (el) {
           el.focus();
           el.select();
-          const r = el.getBoundingClientRect();
-          setPos({ left: r.left, top: r.bottom + 8, width: r.width });
+          if (!inline) {
+            const r = el.getBoundingClientRect();
+            setPos({ left: r.left, top: r.bottom + 8, width: r.width });
+          }
         }
       }
       // Escape to dismiss
@@ -152,6 +155,35 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
+
+  if (inline) {
+    return (
+      <div className={`relative transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        {visible && results.length > 0 && (
+          <div className="mt-4 max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
+            <ul role="listbox" className="outline-none">
+              {results.map((r, i) => (
+                <li
+                  key={r.id}
+                  role="option"
+                  aria-selected={i === active}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => (window.location.href = `/generate/${r.full_name}`)}
+                  className={`px-3 py-2 cursor-pointer ${i === active ? 'bg-white/6' : 'hover:bg-white/3'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{r.name}</div>
+                    <div className="text-xs text-zinc-500">{r.full_name.split('/')[0]}</div>
+                  </div>
+                  {r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{r.description}</div>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div aria-hidden={false} className={`fixed z-40 transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} style={{ left: pos?.left ?? 24, top: pos?.top ?? 120 }}>

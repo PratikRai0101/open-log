@@ -92,7 +92,7 @@ export default async function Dashboard() {
               <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-2 font-mono text-[10px] text-zinc-500">⌘K</kbd>
             </div>
           </div>
-            <QuickSearch initialRepos={repos.map((r) => ({ id: r.id, name: r.name, full_name: r.full_name, description: r.description, updated_at: r.updated_at }))} />
+            <QuickSearch inline initialRepos={repos.map((r) => ({ id: r.id, name: r.name, full_name: r.full_name, description: r.description, updated_at: r.updated_at }))} />
         </div>
 
         {/* Repository Grid */}
