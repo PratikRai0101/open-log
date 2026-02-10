@@ -20,6 +20,7 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RepoShort[]>([]);
   const [active, setActive] = useState(0);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
@@ -32,6 +33,8 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
         if (el) {
           el.focus();
           el.select();
+          const r = el.getBoundingClientRect();
+          setPos({ left: r.left, top: r.bottom + 8, width: r.width });
         }
       }
       // Escape to dismiss
@@ -79,9 +82,18 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
     el.addEventListener('input', onInput, { passive: true });
     window.addEventListener('keydown', onKey);
 
+    const onResize = () => {
+      const r = el.getBoundingClientRect();
+      setPos({ left: r.left, top: r.bottom + 8, width: r.width });
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onResize, true);
+
     return () => {
       el.removeEventListener('input', onInput as any);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onResize, true);
       if (timeout) window.clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,10 +154,10 @@ export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
   }, []);
 
   return (
-    <div aria-hidden={false} className={`fixed left-6 top-22 z-40 transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div aria-hidden={false} className={`fixed z-40 transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} style={{ left: pos?.left ?? 24, top: pos?.top ?? 120 }}>
       <div className="bg-white/3 text-zinc-200 px-3 py-2 rounded-md text-sm shadow">Press ⌘K to focus search</div>
       {visible && results.length > 0 && (
-        <div className="mt-2 w-[420px] max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
+        <div className="mt-2 max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1" style={{ width: pos?.width ?? 420 }}>
           <ul role="listbox" className="outline-none">
             {results.map((r, i) => (
               <li
