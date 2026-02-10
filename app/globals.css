@@ -471,3 +471,49 @@ body{
 .prose.prose-invert :where(h1,h2).huge-heading {
   font-size: 1.5rem;
 }
+
+/* --- Minimalist scrollbar & timeline additions requested --- */
+/* Sleek Minimalist Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #27272a; /* zinc-800 */
+  border-radius: 10px;
+  opacity: 0; /* hidden until hover */
+  transition: opacity .18s ease;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { opacity: 1; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46; /* zinc-700 */
+}
+
+/* Timeline Logic for Editor */
+.bn-block-content[data-content-type="bulletListItem"] {
+  position: relative;
+  padding-left: 16px !important;
+}
+.bn-block-content[data-content-type="bulletListItem"]::before {
+  content: "";
+  position: absolute;
+  left: 0px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.bn-block-content[data-content-type="bulletListItem"]::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #0A0A0B;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 2;
+}

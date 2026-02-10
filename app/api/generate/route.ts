@@ -50,6 +50,11 @@ Raw commits:
 ${chunkLines.join("\n")}
 `;
 
+    // Enforce bold titles and strict bullet format in the model prompt
+    // (clarity: the model should output bullets like: **Title**: Description)
+    // We append a short instruction to the prompt to bias format.
+    const formatEnforcer = `\n\nFormat every bullet point exactly like this: **Title of Change**: Description of change. Do not use sub-bullets. Keep it clean.`;
+
     // For larger commit sets, chunk the commits and generate summaries for
     // each chunk, then stream the concatenated output back to the client.
     // Build per-group chunk lists (array of arrays of lines). If chunkSize <= 0
@@ -124,7 +129,7 @@ ${chunkLines.join("\n")}
           controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: commits.length, totalChunks } }) + "\n"));
           const chunkOutputs: string[] = [];
           for (const [chunkIndex, chunkLines] of allChunks.entries()) {
-            const p = basePrompt(chunkLines);
+            const p = basePrompt(chunkLines) + formatEnforcer;
             // Pass generationConfig (part of the request params) with temperature and max tokens
             // Pass the prompt as a string (the SDK accepts string or array of parts)
             // and pass generationConfig as the second argument (requestOptions).
