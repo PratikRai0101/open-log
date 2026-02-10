@@ -572,3 +572,20 @@ body{
   color: #FF6363;
   font-weight: 700;
 }
+
+/* Fix: hide native list markers to avoid double bullets when timeline markers are shown */
+.bn-block-content[data-content-type="bulletListItem"]::marker,
+.bn-list-item::marker,
+.bn-block__content::marker,
+.bn-block-content::marker {
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+/* BlockNote sometimes renders list markers as separate elements/classes */
+.bn-list-marker,
+.bn-block__marker,
+.bn-block-content .bn-list-marker,
+.bn-list-item .bn-list-marker {
+  display: none !important;
+}
