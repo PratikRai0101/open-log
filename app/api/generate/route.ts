@@ -158,30 +158,8 @@ ${chunkLines.join("\n")}
           return c.message || c.commit?.message || String(c);
         });
 
-        // Generate the changelog synchronously (provider-specific SDKs may not
-        // support streaming in our current wrapper). To provide a smooth typing
-        // experience regardless of provider, stream the final output one
-        // character at a time to the client. This emulates an LLM typing
-        // experience for Groq and Kimi without changing provider calls.
         const md = await generateChangelog(messages, model as AIModel, repo || "project");
-
-        const readable = new ReadableStream({
-          start(controller) {
-            try {
-              // send small meta header so client knows total length
-              controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ meta: { totalChars: md.length } }) + "\n"));
-              const encoder = new TextEncoder();
-              for (let i = 0; i < md.length; i++) {
-                controller.enqueue(encoder.encode(md.charAt(i)));
-              }
-              controller.close();
-            } catch (e) {
-              controller.error(e as Error);
-            }
-          }
-        });
-
-        return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       } catch (err) {
         console.error("AI generateChangelog failed:", err);
         return NextResponse.json({ error: "Generation failed" }, { status: 500 });
@@ -208,6 +186,7 @@ ${chunkLines.join("\n")}
             controller.enqueue(new TextEncoder().encode("~~JSON~~" + JSON.stringify({ chunkIndex, chunkLines: chunkLines.length }) + "\n"));
 
             let currentChunkText = "";
+            const streamByWord = model === 'gemma-27b-it';
             try {
               // Use the official Google GenAI client to generate content for Gemini
               // in a single request per chunk. This mirrors the quickstart pattern.
@@ -222,10 +201,19 @@ ${chunkLines.join("\n")}
                 const parsed = (genResp as any).text || (genResp as any).output?.[0]?.content?.map((c: any) => c.text || "").join("");
                 if (parsed) {
                   currentChunkText = parsed;
-                  // Stream one character at a time to emulate typing behavior
+                  // Stream per-word for gemma to avoid splitting multi-byte
+                  // characters and to improve typing smoothness; otherwise stream per-character.
                   const encoder = new TextEncoder();
-                  for (let i = 0; i < currentChunkText.length; i++) {
-                    controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
+                  if (streamByWord) {
+                    const parts = currentChunkText.split(/(\s+)/);
+                    for (const part of parts) {
+                      if (!part) continue;
+                      controller.enqueue(encoder.encode(part));
+                    }
+                  } else {
+                    for (let i = 0; i < currentChunkText.length; i++) {
+                      controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
+                    }
                   }
                 }
               } catch (err) {
@@ -259,14 +247,22 @@ ${chunkLines.join("\n")}
                   }
                   if (!text && typeof j.output === 'string') text = j.output;
                   if (!text && typeof j.text === 'string') text = j.text;
-                   currentChunkText = text || "";
-                   if (currentChunkText) {
-                     // Stream per-character for a smoother typing effect
-                     const encoder = new TextEncoder();
-                     for (let i = 0; i < currentChunkText.length; i++) {
-                       controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
-                     }
-                   }
+                    currentChunkText = text || "";
+                    if (currentChunkText) {
+                      const encoder = new TextEncoder();
+                      if (streamByWord) {
+                        const parts = currentChunkText.split(/(\s+)/);
+                        for (const part of parts) {
+                          if (!part) continue;
+                          controller.enqueue(encoder.encode(part));
+                        }
+                      } else {
+                        // Stream per-character for a smoother typing effect
+                        for (let i = 0; i < currentChunkText.length; i++) {
+                          controller.enqueue(encoder.encode(currentChunkText.charAt(i)));
+                        }
+                      }
+                    }
                 }
               }
             } catch (err) {
