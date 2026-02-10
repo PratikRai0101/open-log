@@ -175,9 +175,35 @@ ${chunkLines.join("\n")}
         // entire commit set. This preserves UX while avoiding Gemini calls.
         const md = await generateChangelog(messages, "llama-3.3-70b-versatile", repo || "project");
         console.info("API generate: Groq returned length=", (md || "").length);
-        // redact a short preview for logs
         console.debug("API generate: preview:", (md || "").slice(0, 256));
-        return new Response(md || "", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+        // Emulate the streaming protocol the client expects by returning a
+        // ReadableStream that emits control JSON markers (~~JSON~~...) and the
+        // generated markdown. This ensures the client-side streaming parser
+        // (which looks for markers to show progress / final replacement) works
+        // the same whether we used Gemini streaming or the non-stream Groq path.
+        const readable = new ReadableStream({
+          start(controller) {
+            try {
+              const encoder = new TextEncoder();
+              // meta: total commits and single chunk
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: messages.length, totalChunks: 1 } }) + "\n"));
+              // chunk info
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
+              // chunk finished
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
+              // final marker -> client will replace prior content with following payload
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
+              // the actual markdown body
+              controller.enqueue(encoder.encode(md || ""));
+              controller.close();
+            } catch (err) {
+              controller.error(err as Error);
+            }
+          }
+        });
+
+        return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       } catch (err) {
         console.error("Fallback generation failed:", err);
         return NextResponse.json({ error: "Generation failed" }, { status: 500 });
