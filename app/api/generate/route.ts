@@ -134,8 +134,8 @@ ${chunkLines.join("\n")}
     // lib/ai wrapper which talks to those providers. We return the full
     // generated markdown as a single response (non-streaming) to keep the
     // client experience consistent.
-    const knownAIModels: AIModel[] = ["llama-3.3-70b-versatile", "moonshot-v1-8k"];
-    if (model && knownAIModels.includes(model as AIModel)) {
+    const knownAIModels: (AIModel | 'gemini')[] = ["llama-3.3-70b-versatile", "moonshot-v1-8k", 'gemini'];
+    if (model && knownAIModels.includes(model as any) && model !== 'gemini') {
       try {
         // Extract plain commit messages (input may be objects or strings)
         const messages: string[] = (commits || []).map((c: any) => {

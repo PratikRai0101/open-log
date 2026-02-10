@@ -63,7 +63,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [copied, setCopied] = useState(false);
   // versionTag is editable inline
-  const [selectedModel, setSelectedModel] = useState<"llama-3.3-70b-versatile" | "moonshot-v1-8k">("llama-3.3-70b-versatile");
+  // model selector: 'gemini' uses Google Generative AI streaming path
+  const [selectedModel, setSelectedModel] = useState<"gemini" | "llama-3.3-70b-versatile" | "moonshot-v1-8k">("gemini");
 
   const filteredCommits = initialCommits.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -476,8 +477,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                     onChange={(e) => setSelectedModel(e.target.value as any)}
                     className="bg-[#0A0A0B] text-xs text-zinc-300 border border-white/5 rounded px-2 py-1"
                   >
+                    <option value="gemini">🔮 Google Gemini (Streaming)</option>
                     <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
-                    <option value="moonshot-v1-8k">🧠 Moonshot (Kimi) - High Quality</option>
+                    <option value="moonshot-v1-8k">🧠 Kimi2 (Moonshot) - High Quality</option>
                   </select>
                  <PenLine size={12} className="text-zinc-600"/>
                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
