@@ -245,6 +245,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       const decoder = new TextDecoder();
       let partial = "";
       let expectFinalReplace = false;
+      // when streaming, we'll progressively reveal words — store the current displayed text
+      let displayed = "";
       // show loading skeleton while receiving content
       setGenerated("");
       setIsGenerating(true);
@@ -314,16 +316,25 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
           continue;
         }
 
-        // Normal content
+         // Normal content
          if (expectFinalReplace) {
-          // Replace with final merged content and preserve scroll
-          partial = chunk;
-          replaceGenerated(partial, true);
-          expectFinalReplace = false;
-        } else {
+           // Replace with final merged content and preserve scroll
+           partial = chunk;
+           replaceGenerated(partial, true);
+           expectFinalReplace = false;
+         } else {
            partial += chunk;
-           setGenerated(partial);
-        }
+           // Try to reveal words progressively for a typewriter-like feel.
+           // We'll split on whitespace and reveal in small batches.
+           const words = partial.split(/(\s+)/);
+           // reveal up to last N tokens to give sense of flow
+           const revealCount = Math.max(6, Math.floor(words.length * 0.08));
+           // build displayed text from tokens
+           displayed = words.slice(0, Math.min(words.length, revealCount)).join("") + (words.length > revealCount ? "" : "");
+           // set generated to displayed to show progressive text, but keep partial in state
+           setGenerated(displayed + (words.length > revealCount ? "" : ""));
+           // schedule a small timeout to append more if more content arrives
+         }
       }
     } catch (err) {
       console.error(err);
@@ -635,7 +646,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
             <div className="flex-1 overflow-hidden relative">
                 {isGenerating && !generated ? (
                    <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
-                      <TextSkeleton lines={12} />
+                      <div aria-busy="true" aria-live="polite">
+                        <TextSkeleton lines={12} />
+                      </div>
                    </div>
                 ) : generated ? (
                   <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
