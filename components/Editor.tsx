@@ -327,7 +327,9 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   if (!editor) return <div className="text-zinc-500 p-4">Loading Editor...</div>;
 
   return (
-    <div ref={containerRef} className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 ${!editable ? 'opacity-90' : ''}`}>
+    <div
+      ref={containerRef}
+      className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 ${!editable ? 'opacity-90 bn-readonly' : ''}`}>
       <BlockNoteView
         editor={editor}
         theme="dark"

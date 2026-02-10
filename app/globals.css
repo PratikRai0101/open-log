@@ -414,6 +414,22 @@ body{
   padding: 0.5rem 0.75rem;
 }
 
+/* Visual polish for read-only preview: hide editor UI affordances (caret, commands). */
+.bn-readonly .bn-block-group:after,
+.bn-readonly .bn-block__ghost,
+.bn-readonly .bn-block-selector,
+.bn-readonly .bn-toolbar,
+.bn-readonly .bn-placeholder,
+.bn-readonly .bn-type-prompt {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.bn-readonly .bn-editor__content,
+.bn-readonly .bn-view__content {
+  caret-color: transparent !important;
+}
+
 /* Preview parity: make ReactMarkdown preview visually match BlockNote editor */
 .prose.prose-invert {
   /* use a subtle, compact typographic scale similar to BlockNote */
