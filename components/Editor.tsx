@@ -19,6 +19,7 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   const createdRef = /*#__PURE__*/ { current: null } as any;
   const lastPushedRef = /*#__PURE__*/ { current: null } as any;
   const suppressOnChangeRef = /*#__PURE__*/ { current: false } as any;
+  const domRetryRef = useRef<{ timer: number | null; attempts: number }>({ timer: null, attempts: 0 });
 
   // Create editor instance once and set into state
   useEffect(() => {
@@ -94,22 +95,53 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
       // ignore
     }
 
-    // Fallback: set contentEditable on the actual DOM content container inside this component
-    try {
-      const root = containerRef.current;
-      if (root) {
+    // Fallback: set contentEditable on the actual DOM content container inside this component.
+    // BlockNote may render its internal DOM asynchronously, so retry a few times if the
+    // content element isn't present yet.
+    const trySetContentEditable = () => {
+      try {
+        const root = containerRef.current;
+        if (!root) return false;
         const contentEl = root.querySelector('.bn-editor__content, .bn-view__content') as HTMLElement | null;
         if (contentEl) {
           contentEl.contentEditable = editable ? 'true' : 'false';
-          // also set aria-readonly for accessibility
           if (!editable) contentEl.setAttribute('aria-readonly', 'true');
           else contentEl.removeAttribute('aria-readonly');
+          return true;
         }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore DOM fallback failures
+      return false;
+    };
+
+    // clear any previous retry
+    if (domRetryRef.current.timer) {
+      window.clearTimeout(domRetryRef.current.timer as number);
+      domRetryRef.current.timer = null;
+      domRetryRef.current.attempts = 0;
+    }
+
+    if (!trySetContentEditable()) {
+      // schedule retries up to a small limit
+      const maxAttempts = 8;
+      const schedule = () => {
+        domRetryRef.current.attempts += 1;
+        if (trySetContentEditable() || domRetryRef.current.attempts >= maxAttempts) {
+          return;
+        }
+        domRetryRef.current.timer = window.setTimeout(schedule, 120) as unknown as number;
+      };
+      domRetryRef.current.timer = window.setTimeout(schedule, 120) as unknown as number;
     }
   }, [editor, editable]);
+
+  // cleanup retry timer on unmount
+  useEffect(() => {
+    return () => {
+      if (domRetryRef.current.timer) window.clearTimeout(domRetryRef.current.timer as number);
+    };
+  }, []);
 
   // Change handler: try to use BlockNote's onChange via BlockNoteView; fallback to polling
   useEffect(() => {
