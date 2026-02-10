@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE } from "../../../lib/gemini";
+import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels } from "../../../lib/gemini";
 import { generateChangelog, AIModel } from "@/lib/ai";
 import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
 
@@ -126,6 +126,24 @@ ${chunkLines.join("\n")}
         outSections.push(...filtered);
       }
       return outSections.join("\n\n");
+    }
+
+    // If using the Gemini path (Google) ensure the configured model exists
+    // — a 404 from the Google API usually means the model resource isn't found
+    // for the provided API key. We can list available models to help debug.
+    const useGemini = !model || model === 'gemini';
+    if (useGemini) {
+      try {
+        const available = await listModels();
+        // If DEFAULT_MODEL isn't in the available list, return an informative error.
+        const found = available.find((m: string) => m.includes(DEFAULT_MODEL) || m === DEFAULT_MODEL);
+        if (!found) {
+          console.error("Requested Gemini model not found:", DEFAULT_MODEL, "available:", available.slice(0,20));
+          return NextResponse.json({ error: `Gemini model '${DEFAULT_MODEL}' not found for your API key.`, availableModels: available }, { status: 400 });
+        }
+      } catch (err) {
+        console.warn("Could not list Gemini models to validate configured model:", err);
+      }
     }
 
     // Create a combined ReadableStream that sequentially streams each chunk's

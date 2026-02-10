@@ -13,7 +13,7 @@ export const genAI = new GoogleGenerativeAI(apiKey || "");
 export async function listModels() {
   if (!apiKey) return [];
   try {
-    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models", {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1/models", {
       headers: { "x-goog-api-key": apiKey },
     });
     if (!res.ok) return [];
