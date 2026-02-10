@@ -25,7 +25,7 @@ import {
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
-import { publishRelease } from "@/app/actions";
+import { publishRelease, getLatestReleaseTag } from "@/app/actions";
 
 export type SimpleCommit = {
   hash: string;
@@ -56,8 +56,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savedDraft, setSavedDraft] = useState<string | null>(null);
+  const [showRestoreDraftPrompt, setShowRestoreDraftPrompt] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("preview"); // New: Tabs
   const [versionTag, setVersionTag] = useState("v1.0.0"); // New: Input field
+  const [latestTag, setLatestTag] = useState<string | null>(null);
+  const [bumps, setBumps] = useState<{ patch: string; minor: string; major: string } | null>(null);
   const editorRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
@@ -87,14 +90,40 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem(key);
         if (saved) {
+          // Do not auto-restore silently. Offer the user a non-destructive
+          // Restore Draft prompt so they can accept or discard the autosaved
+          // content. We still show that a draft exists and when it was saved.
           setSavedDraft(saved);
-          if (!generated) setGenerated(saved);
+          setShowRestoreDraftPrompt(true);
           setLastSavedAt(Date.now());
         }
       }
     } catch (e) {
       // noop
     }
+    // Fetch latest release tag and compute bumps
+    (async () => {
+      try {
+        const tag = await getLatestReleaseTag(repoName);
+        if (tag) {
+          setLatestTag(tag);
+          const match = tag.match(/v?(\d+)\.(\d+)\.(\d+)/);
+          if (match) {
+            const major = parseInt(match[1]);
+            const minor = parseInt(match[2]);
+            const patch = parseInt(match[3]);
+            setBumps({
+              patch: `v${major}.${minor}.${patch + 1}`,
+              minor: `v${major}.${minor + 1}.0`,
+              major: `v${major + 1}.0.0`,
+            });
+            setVersionTag(`v${major}.${minor}.${patch + 1}`);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -443,21 +472,67 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
          </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-mono text-zinc-400">
-              <span className="text-[10px] text-zinc-500 font-mono">tag:</span>
-              <input
-                type="text"
-                value={versionTag}
-                onChange={(e) => setVersionTag(e.target.value)}
-                className="bg-transparent border-none text-[10px] font-mono text-zinc-300 w-20 focus:ring-0 p-0 placeholder-zinc-600"
-                placeholder="v0.0.0"
-              />
+            {/* Version Input & Smart SemVer Bumps */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5 rounded focus-within:border-white/20 transition-colors">
+                  <span className="text-[10px] text-zinc-500 font-mono">tag:</span>
+                  <input 
+                    type="text" 
+                    value={versionTag}
+                    onChange={(e) => setVersionTag(e.target.value)}
+                    className="bg-transparent border-none text-[10px] font-mono text-zinc-300 w-20 focus:ring-0 p-0 placeholder-zinc-600"
+                    placeholder="v0.0.0"
+                  />
+              </div>
+              
+              {/* SemVer Bump Buttons */}
+              {bumps && (
+                <div className="flex items-center gap-1 bg-[#0A0A0B] p-0.5 rounded border border-white/5">
+                  <button onClick={() => setVersionTag(bumps.patch)} className="text-[9px] font-mono px-1.5 py-0.5 rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title={`Patch to ${bumps.patch}`}>Patch</button>
+                  <button onClick={() => setVersionTag(bumps.minor)} className="text-[9px] font-mono px-1.5 py-0.5 rounded text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title={`Minor to ${bumps.minor}`}>Minor</button>
+                  <button onClick={() => setVersionTag(bumps.major)} className="text-[9px] font-mono px-1.5 py-0.5 rounded text-[#FF4F4F] bg-[#FF4F4F]/10 hover:bg-[#FF4F4F]/20 transition-colors" title={`Major to ${bumps.major}`}>Major</button>
+                </div>
+              )}
             </div>
+
+            {/* Restore Draft CTA (non-destructive) */}
+            {showRestoreDraftPrompt && savedDraft && (
+              <div className="ml-3 flex items-center gap-2 bg-[#071012] px-2 py-1 rounded border border-white/6">
+                <div className="text-xs text-zinc-400 font-mono">Draft found</div>
+                <button
+                  onClick={() => {
+                    setGenerated(savedDraft);
+                    setShowRestoreDraftPrompt(false);
+                    // keep savedDraft in case user wants to discard later
+                  }}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded text-zinc-300 hover:bg-white/5"
+                >
+                  Restore
+                </button>
+                <button
+                  onClick={() => {
+                    try {
+                      const key = `openlog_draft_${repoName}`;
+                      if (typeof window !== "undefined") localStorage.removeItem(key);
+                    } catch (e) {
+                      // noop
+                    }
+                    setSavedDraft(null);
+                    setShowRestoreDraftPrompt(false);
+                  }}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded text-zinc-500 hover:text-zinc-300"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* User Button */}
             <UserButton
               afterSignOutUrl="/"
               appearance={{ elements: { avatarBox: "size-8 border border-white/10" } }}
             />
-          </div>
+         </div>
       </header>
 
       {/* MAIN WORKSPACE */}
