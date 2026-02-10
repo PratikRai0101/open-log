@@ -413,3 +413,45 @@ body{
   border-radius: 12px;
   padding: 0.5rem 0.75rem;
 }
+
+/* Preview parity: make ReactMarkdown preview visually match BlockNote editor */
+.prose.prose-invert {
+  /* use a subtle, compact typographic scale similar to BlockNote */
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.prose.prose-invert h1,
+.prose.prose-invert h2,
+.prose.prose-invert h3 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+.prose.prose-invert h1 {
+  font-size: 1.25rem; /* smaller than default to match editor heading scale */
+  font-weight: 700;
+}
+.prose.prose-invert h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.prose.prose-invert p {
+  color: var(--text-primary, #d1d1d1);
+  margin: 0.25rem 0;
+}
+.prose.prose-invert ul,
+.prose.prose-invert ol {
+  margin: 0.25rem 0 0.5rem 0;
+  padding-left: 1.25rem;
+}
+.prose.prose-invert li {
+  margin: 0.25rem 0;
+}
+.prose.prose-invert li::marker {
+  color: var(--text-primary, #FF4F4F);
+}
+
+/* Make very large headings used elsewhere not blow up in the preview area */
+.prose.prose-invert :where(h1,h2).huge-heading {
+  font-size: 1.5rem;
+}
