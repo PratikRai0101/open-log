@@ -17,7 +17,7 @@
 
 ![openlog-hero](https://github.com/user-attachments/assets/3051266a-5179-440f-a747-7980abd7bac3)
 
-> OpenLog automates changelog writing. Select commits, generate an AI draft, polish in a rich workstation, and publish to GitHub Releases.
+> OpenLog automates changelog writing. Select commits, generate an AI draft (Groq), polish in a rich BlockNote workstation, and publish to GitHub Releases.
 
 ## Table of contents
 
@@ -34,14 +34,15 @@
 
 Maintaining clear release notes is repetitive and error-prone. OpenLog pulls commits, groups them semantically, and uses a model (Groq by default) to produce concise, user-friendly changelogs you can edit and publish.
 
-## Features
+## Features (implemented)
 
-- AI-powered changelog generation (Groq / Llama 3.3 — default)
-- Live streaming generation with typewriter UI
-- Notion-style block editor (BlockNote) with autosave and draft restore
-- Smart SemVer bump suggestions (Patch / Minor / Major)
-- One-click publish to GitHub Releases
-- Copy-to-clipboard for cross-posting
+- AI-powered changelog generation (Groq / Llama 3.3) — server-side generation and streaming
+- Streaming-friendly client with progressive "typewriter" reveal and skeleton loading
+- BlockNote rich editor for editing generated drafts (WYSIWYG) with autosave and explicit "Restore Draft" CTA
+- Commit selection UI with persisted selection per-repo
+- Smart SemVer suggestions (fetch latest GitHub tag and suggest Patch/Minor/Major)
+- One-click publish to GitHub Releases from the workstation
+- Lightweight Model selector (Groq enabled); other models are intentionally disabled in code
 
 ## Install
 
@@ -63,16 +64,23 @@ pnpm dev
 
 ### Environment
 
-Copy `.env.example` to `.env.local` and fill required keys: Clerk, GitHub token, GROQ API key.
+Copy `.env.example` to `.env.local` and fill required keys. Currently required env vars:
 
-Gemini and Kimi integrations are currently disabled; only `GROQ_API_KEY` is required for AI generation.
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — Clerk frontend key (auth)
+- `CLERK_SECRET_KEY` — Clerk server key (auth)
+ - `GROQ_API_KEY` — Groq provider API key (AI generation, required)
+ - `GITHUB_OAUTH_TEMPLATE` — OAuth template name used by Clerk (defaults to `oauth_github` in `.env.example`)
+ - `GITHUB_ACCESS_TOKEN` — optional: a personal or machine token used server-side to fetch release metadata when present (not required for publish which uses Clerk OAuth)
+
+Other provider keys (Gemini / Kimi) are intentionally disabled by default and are not required. See CONTRIBUTING.md for how to re-enable provider paths.
 
 ## Usage
 
 1. Log in with GitHub via Clerk.
-2. Select a repository and pick commits.
-3. Press `Generate` (or `⌘+Enter`) to stream an AI draft.
-4. Edit the draft in the workstation and publish to GitHub Releases.
+2. Select a connected repository in the workspace and pick commits to include.
+3. Press `Generate` (or `⌘+Enter`) to stream an AI draft (Groq).
+4. Edit the draft using the BlockNote editor. Drafts are autosaved locally; use "Restore Draft" to recover.
+5. Click `Publish` to create a GitHub Release for the selected repo.
 
 ### Keyboard Shortcuts
 
@@ -89,14 +97,16 @@ Gemini and Kimi integrations are currently disabled; only `GROQ_API_KEY` is requ
 - `pnpm dev` — Run the app locally
 - Components that are heavy (Editor, ModelSelector) are dynamically imported to reduce initial bundle size.
 
+Local dev notes:
+
+- Authentication: the app uses Clerk for auth. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in `.env.local` to enable full end-to-end flows that require publishing.
+- Publishing: the workstation uses the GitHub OAuth token issued to the signed-in user (via Clerk) to create releases. The server-side `GITHUB_ACCESS_TOKEN` is only used as an optional server-side fallback for metadata lookups (e.g. fetching the latest release tag).
+
+See `CONTRIBUTING.md` for development conventions (Conventional Commits, branch naming, and testing).
+
 ## Contributing
 
-We welcome contributions. Please follow these steps:
-
-1. Fork the project
-2. Create a branch: `git checkout -b feature/your-feature`
-3. Commit changes with Conventional Commits (e.g. `feat(editor): add autosave`)
-4. Push and open a Pull Request
+Thanks for considering a contribution — see `CONTRIBUTING.md` for the full guide (commit format, branch naming, and local development steps).
 
 ## License
 
