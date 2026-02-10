@@ -9,13 +9,19 @@ const groq = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
-// 2. Moonshot/Kimi: use direct REST calls to match Moonshot quickstart
+// 2. Moonshot/Kimi: use the OpenAI-compatible client pointed at Moonshot's
+// baseURL (per Moonshot quickstart). This mirrors the example usage where
+// `new OpenAI({ baseURL: 'https://api.moonshot.ai/v1' })` is used and
+// `client.chat.completions.create(...)` is called.
 if (!process.env.MOONSHOT_API_KEY) {
   console.warn("MOONSHOT_API_KEY not set — Moonshot/Kimi generation will fail if requested");
 }
-const MOONSHOT_ENDPOINT = "https://api.moonshot.ai/v1/chat/completions";
+const moonshot = new OpenAI({
+  apiKey: process.env.MOONSHOT_API_KEY || undefined,
+  baseURL: "https://api.moonshot.ai/v1",
+});
 
-export type AIModel = "llama-3.3-70b-versatile" | "moonshot-v1-8k";
+export type AIModel = "llama-3.3-70b-versatile" | "kimi-k2-turbo-preview";
 
 export async function generateChangelog(commits: string[], model: AIModel, projectName: string) {
   const prompt = `
@@ -47,25 +53,23 @@ export async function generateChangelog(commits: string[], model: AIModel, proje
         });
       } else {
         if (!process.env.MOONSHOT_API_KEY) throw new Error("Missing MOONSHOT_API_KEY environment variable");
-        // Moonshot Kimi expects REST POST to their chat completions endpoint.
-        const payload = {
-          model: model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-        };
-        const res = await fetch(MOONSHOT_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.MOONSHOT_API_KEY}`,
+        // Use the Moonshot/OpenAI-compatible client to create a chat completion.
+        // Include a short system prompt that identifies the assistant as Kimi
+        // per Moonshot's quickstart example.
+        const messages = [
+          {
+            role: "system",
+            content:
+              "You are Kimi, an AI assistant provided by Moonshot AI. You are proficient in Chinese and English conversations. Provide safe, helpful, and accurate answers. Reject requests involving terrorism, racism, or explicit content.",
           },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`Moonshot API error: ${res.status} ${txt}`);
-        }
-        response = await res.json();
+          { role: "user", content: prompt },
+        ];
+
+        response = await moonshot.chat.completions.create({
+          model: model,
+          messages,
+          temperature: 0.3,
+        } as any);
       }
 
       // Normalize response shapes

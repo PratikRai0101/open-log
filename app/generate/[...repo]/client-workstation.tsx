@@ -64,7 +64,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const [copied, setCopied] = useState(false);
   // versionTag is editable inline
   // model selector: 'gemini' uses Google Generative AI streaming path
-  const [selectedModel, setSelectedModel] = useState<"gemini" | "llama-3.3-70b-versatile" | "moonshot-v1-8k">("gemini");
+  const [selectedModel, setSelectedModel] = useState<"gemma-27b-it" | "llama-3.3-70b-versatile" | "moonshot-v1-8k">("gemma-27b-it");
 
   const filteredCommits = initialCommits.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -399,7 +399,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
              <Link href="/" className="text-zinc-500 hover:text-zinc-300 transition-colors"><ArrowLeft size={16} /></Link>
              <span className="font-bold text-zinc-100 tracking-tight">OpenLog</span>
              <span className="text-zinc-700">/</span>
-             <span className="text-sm text-zinc-400 font-mono truncate max-w-[200px]">{repoName}</span>
+             <span className="text-sm text-zinc-400 font-mono truncate max-w-50">{repoName}</span>
           </div>
          
          <div className="flex bg-[#0A0A0B] p-1 rounded-lg border border-white/5">
@@ -428,7 +428,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       {/* MAIN WORKSPACE */}
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* SIDEBAR: Full Height, No "Card" Look */}
-         <aside className="w-[360px] flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
+         <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
            {/* Search */}
            <div className="p-4 border-b border-white/5 space-y-3">
               <div className="relative">
@@ -453,7 +453,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                 const isSelected = selected.has(c.hash);
                 return (
                   <div key={c.hash} onClick={() => toggleCommit(c.hash)} 
-                    className={`commit-item px-5 py-4 border-b border-white/[0.02] cursor-pointer transition-colors hover:bg-white/[0.02] ${isSelected ? 'bg-white/[0.04]' : ''}`}
+                    className={`commit-item px-5 py-4 border-b border-white/2 cursor-pointer transition-colors hover:bg-white/2 ${isSelected ? 'bg-white/4' : ''}`}
                   >
                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{c.type}</span>
@@ -479,7 +479,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                   >
                     <option value="gemini">🔮 Google Gemini (Streaming)</option>
                     <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
-                    <option value="moonshot-v1-8k">🧠 Kimi2 (Moonshot) - High Quality</option>
+                    <option value="kimi-k2-turbo-preview">🧠 Kimi2 (Moonshot) - High Quality</option>
                   </select>
                  <PenLine size={12} className="text-zinc-600"/>
                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>

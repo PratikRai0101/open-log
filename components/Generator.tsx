@@ -31,7 +31,7 @@ export default function Generator({ repoName }: { repoName: string }) {
           className="bg-zinc-900 border border-zinc-700 text-white text-sm rounded-lg block w-full p-2.5"
         >
           <option value="llama-3.3-70b-versatile">⚡ Groq (Llama 3.3) - Fast</option>
-          <option value="moonshot-v1-8k">🧠 Moonshot (Kimi) - High Quality</option>
+          <option value="kimi-k2-turbo-preview">🧠 Moonshot (Kimi) - High Quality</option>
         </select>
 
         {/* Generate Button */}
