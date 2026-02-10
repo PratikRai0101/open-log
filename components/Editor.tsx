@@ -143,6 +143,64 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     };
   }, []);
 
+  // Stronger guard: intercept input events inside the editor container to block typing
+  // in preview/read-only mode. This avoids relying on BlockNote internals and works
+  // even if contentEditable is set on nested nodes.
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    function onBeforeInput(e: InputEvent) {
+      if (!editable) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    function onKeyDown(ev: KeyboardEvent) {
+      if (editable) return;
+      const allowed = [
+        'ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+        'Home','End','PageUp','PageDown','Shift','Control','Meta','Alt','Tab','Escape'
+      ];
+      // allow navigation and modifier keys
+      if (allowed.includes(ev.key)) return;
+      // prevent printable characters and editing keys
+      const preventKeys = ['Backspace','Delete','Enter'];
+      if (preventKeys.includes(ev.key) || ev.key.length === 1) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+    }
+
+    function onPaste(e: ClipboardEvent) {
+      if (!editable) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    function onDrop(e: DragEvent) {
+      if (!editable) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    // Use capture so we can intercept before BlockNote handles them
+    root.addEventListener('beforeinput', onBeforeInput as EventListener, { capture: true });
+    root.addEventListener('keydown', onKeyDown as EventListener, { capture: true });
+    root.addEventListener('paste', onPaste as EventListener, { capture: true });
+    root.addEventListener('drop', onDrop as EventListener, { capture: true });
+
+    return () => {
+      root.removeEventListener('beforeinput', onBeforeInput as EventListener, { capture: true } as any);
+      root.removeEventListener('keydown', onKeyDown as EventListener, { capture: true } as any);
+      root.removeEventListener('paste', onPaste as EventListener, { capture: true } as any);
+      root.removeEventListener('drop', onDrop as EventListener, { capture: true } as any);
+    };
+  }, [editable]);
+
   // Change handler: try to use BlockNote's onChange via BlockNoteView; fallback to polling
   useEffect(() => {
     if (!editor) return;
