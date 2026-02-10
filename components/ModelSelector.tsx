@@ -16,7 +16,7 @@ const MODELS: ModelOption[] = [
     id: "gemini",
     name: "Google Gemini",
     badge: "Streaming",
-    iconUrl: "https://logo.clearbit.com/google.com",
+    iconUrl: "/icons/gemini.svg",
     icon: (
       // Star-like Gemini glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -34,7 +34,7 @@ const MODELS: ModelOption[] = [
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
     badge: "Fast",
-    iconUrl: "https://logo.clearbit.com/groq.com",
+    iconUrl: "/icons/groq.svg",
     icon: (
       // Lightning / G glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -46,7 +46,7 @@ const MODELS: ModelOption[] = [
     id: "kimi-k2-turbo-preview",
     name: "Kimi2 (Moonshot)",
     badge: "High Quality",
-    iconUrl: "https://logo.clearbit.com/moonshot.com",
+    iconUrl: "/icons/kimi.svg",
     icon: (
       // Crescent glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
