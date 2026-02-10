@@ -100,3 +100,15 @@
 .blocknote-root {
   transition: background-color 160ms linear, color 160ms linear;
 }
+
+/* Skeleton helper: subtle shimmer using background gradient */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
