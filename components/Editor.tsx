@@ -243,11 +243,13 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   }, []);
 
   // Stronger guard: intercept input events inside the editor container to block typing
-  // in preview/read-only mode. This avoids relying on BlockNote internals and works
-  // even if contentEditable is set on nested nodes.
+  // in preview/read-only mode. Only attach these listeners when NOT editable so we
+  // never interfere with the live editor's native key handling (Enter/newline,
+  // IME input, etc.).
   useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
+    if (editable) return; // attach only in preview/read-only
+    const rootEl = containerRef.current;
+    if (!rootEl) return;
 
     function onBeforeInput(e: InputEvent) {
       if (!editable) {
@@ -287,27 +289,161 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     }
 
     // Use capture so we can intercept before BlockNote handles them
-    root.addEventListener('beforeinput', onBeforeInput as EventListener, { capture: true });
-    root.addEventListener('keydown', onKeyDown as EventListener, { capture: true });
-    root.addEventListener('paste', onPaste as EventListener, { capture: true });
-    root.addEventListener('drop', onDrop as EventListener, { capture: true });
+    rootEl.addEventListener('beforeinput', onBeforeInput as EventListener, { capture: true });
+    rootEl.addEventListener('keydown', onKeyDown as EventListener, { capture: true });
+    rootEl.addEventListener('paste', onPaste as EventListener, { capture: true });
+    rootEl.addEventListener('drop', onDrop as EventListener, { capture: true });
 
     return () => {
-      root.removeEventListener('beforeinput', onBeforeInput as EventListener, { capture: true } as any);
-      root.removeEventListener('keydown', onKeyDown as EventListener, { capture: true } as any);
-      root.removeEventListener('paste', onPaste as EventListener, { capture: true } as any);
-      root.removeEventListener('drop', onDrop as EventListener, { capture: true } as any);
+      rootEl.removeEventListener('beforeinput', onBeforeInput as EventListener, { capture: true } as any);
+      rootEl.removeEventListener('keydown', onKeyDown as EventListener, { capture: true } as any);
+      rootEl.removeEventListener('paste', onPaste as EventListener, { capture: true } as any);
+      rootEl.removeEventListener('drop', onDrop as EventListener, { capture: true } as any);
     };
   }, [editable]);
+
+  // Editor keyboard shortcuts (undo/redo/copy/paste). Attach a global handler
+  // but only act when the editor element currently has focus. This avoids
+  // fragile references to internals and fixes TypeScript "root is possibly
+  // null" issues by using explicit null checks and window-level listeners.
+  useEffect(() => {
+    function handleShortcuts(ev: KeyboardEvent) {
+      try {
+        if (!editable) return;
+        const root = containerRef.current;
+        if (!root) return;
+
+        // Only intercept when the editor/container currently contains focus
+        if (!(document.activeElement && root.contains(document.activeElement))) return;
+
+        const mod = ev.ctrlKey || ev.metaKey;
+        if (!mod) return; // only handle modifier-key combos
+
+        const key = String(ev.key || '').toLowerCase();
+
+        // Let native paste (and other non-modifier keys like Enter) flow through.
+        // We avoid intercepting plain paste here to ensure BlockNote's paste
+        // handling and IME/newline behaviour remain intact.
+
+        // Undo / Redo via BlockNote's API when available
+        if (key === 'z' || key === 'y') {
+          const be = editor as any;
+          // Shift+Cmd/Ctrl+Z -> redo
+          if (key === 'z' && ev.shiftKey) {
+            if (be && typeof be.redo === 'function') {
+              be.redo();
+              ev.preventDefault();
+              ev.stopPropagation();
+              return;
+            }
+            // fallback
+            document.execCommand('redo');
+            ev.preventDefault();
+            ev.stopPropagation();
+            return;
+          }
+          if (key === 'z') {
+            if (be && typeof be.undo === 'function') {
+              be.undo();
+              ev.preventDefault();
+              ev.stopPropagation();
+              return;
+            }
+            document.execCommand('undo');
+            ev.preventDefault();
+            ev.stopPropagation();
+            return;
+          }
+          if (key === 'y') {
+            if (be && typeof be.redo === 'function') {
+              be.redo();
+              ev.preventDefault();
+              ev.stopPropagation();
+              return;
+            }
+            document.execCommand('redo');
+            ev.preventDefault();
+            ev.stopPropagation();
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore and allow native behavior
+      }
+    }
+
+    // Attach in bubble phase so the editor's internal listeners (which may use
+    // capture) run first. This prevents us from accidentally blocking Enter/newline
+    // which the editor handles natively.
+    window.addEventListener('keydown', handleShortcuts, false);
+    return () => window.removeEventListener('keydown', handleShortcuts, false);
+  }, [editable, editor]);
+
+  // Safe paste handler: intercept only the 'paste' event (not keydown) when
+  // our editor has focus and is editable. Prefer BlockNote's paste APIs
+  // (pasteMarkdown / pasteText) when available; otherwise allow the native
+  // paste to proceed (this preserves image/HTML paste and IME behavior).
+  useEffect(() => {
+    if (!editable) return;
+    const rootEl = containerRef.current;
+    if (!rootEl) return;
+
+    const onPaste = (evt: Event) => {
+      const e = evt as ClipboardEvent;
+      // run async work without making the listener itself async (keeps types simple)
+      (async () => {
+        try {
+          // Only act when the editor/container currently contains focus
+          if (!(document.activeElement && rootEl.contains(document.activeElement))) return;
+
+          const types = e.clipboardData?.types || [];
+          if (!(types.includes?.('text/plain') || types.includes?.('text')) && types.length > 0) {
+            // If clipboard contains non-text types (images/html) let native handling run
+            return;
+          }
+
+          // Read plain text from clipboard (fallback to navigator.clipboard)
+          let text = '';
+          if (e.clipboardData) text = e.clipboardData.getData('text/plain') || '';
+          if (!text && navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+            try { text = await navigator.clipboard.readText(); } catch { /* ignore */ }
+          }
+
+          if (!text) return; // nothing textual to handle
+
+          const be = editor as any;
+          if (be && typeof be.pasteMarkdown === 'function') {
+            e.preventDefault?.();
+            e.stopPropagation?.();
+            await be.pasteMarkdown(text);
+            return;
+          }
+          if (be && typeof be.pasteText === 'function') {
+            e.preventDefault?.();
+            e.stopPropagation?.();
+            await be.pasteText(text);
+            return;
+          }
+
+          // Otherwise fall back to native paste (do nothing)
+        } catch {
+          // On any error, allow native paste to proceed
+        }
+      })();
+    };
+
+    rootEl.addEventListener('paste', onPaste, false);
+    return () => rootEl.removeEventListener('paste', onPaste, false);
+  }, [editor, editable]);
 
   // Global capture: some BlockNote builds render outside our container (portal).
   // Register window-level capture handlers to prevent input for any BlockNote root
   // on the page when this editor is in read-only mode.
   useEffect(() => {
+    if (editable) return; // only attach global blockers when preview/read-only
     const globalSelectors = ['.blocknote-root', '.bn-container', '.bn-root', '.blocknote-editor'];
 
     function blockIfBlocknoteTarget(e: Event) {
-      if (editable) return;
       const t = e.target as HTMLElement | null;
       if (!t) return;
       try {
