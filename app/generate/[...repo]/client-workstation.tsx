@@ -338,200 +338,237 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     }
   }
 
+  // Focus version input when entering edit mode
+  useEffect(() => {
+    if (editingVersion && versionInputRef.current) {
+      try { versionInputRef.current.focus(); versionInputRef.current.select(); } catch (e) {}
+    }
+  }, [editingVersion]);
+
+  // Robust copy helper: try editorRef.getMarkdown(), fallback to generated, then savedDraft.
+  async function handleCopy() {
+    try {
+      let text = "";
+      if (editorRef.current && typeof editorRef.current.getMarkdown === "function") {
+        try {
+          text = await editorRef.current.getMarkdown();
+        } catch (e) {
+          // fallback
+        }
+      }
+      if (!text) text = generated || savedDraft || "";
+
+      if (!text) {
+        toast.error("Nothing to copy");
+        return;
+      }
+
+      // Primary: Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast.success("Copied release body to clipboard");
+        return;
+      }
+
+      // Fallback: textarea + execCommand
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (ok) toast.success("Copied release body to clipboard");
+      else toast.error("Copy failed");
+    } catch (e) {
+      console.error(e);
+      toast.error("Copy failed");
+    }
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden selection:bg-[#FF4F4F] selection:text-white relative">
+  <div className="h-screen flex flex-col bg-gradient-to-b from-[#050505] via-[#070707] to-[#050505] text-zinc-300 font-sans overflow-hidden selection:bg-[#FF4F4F] selection:text-white relative antialiased">
       
-      {/* 1. TOP HEADER ROW (Global Controls) */}
-      <header className="h-16 px-6 flex items-center justify-between shrink-0 z-20">
+      {/* 1. TOP GLOBAL HEADER */}
+      <header className="h-16 px-6 flex items-center justify-between shrink-0 z-20 bg-gradient-to-b from-[#0b0b0c] to-transparent backdrop-blur-sm border-b border-white/5">
         {/* Left: Brand & Breadcrumbs */}
         <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2 text-zinc-500">
+           <div className="flex items-center gap-2 text-zinc-500">
              <div className="size-6 bg-white/10 rounded flex items-center justify-center text-white font-bold text-xs">OL</div>
              <span className="text-zinc-300 font-medium">OpenLog</span>
-             <span>/</span>
-             <span>{repoName}</span>
+             <span className="text-zinc-600">/</span>
+             <span className="text-zinc-400">{repoName}</span>
            </div>
-           <div className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[10px] text-zinc-400 font-mono">
+           <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-zinc-400 font-mono">
              {versionTag || "v0.0.0"}
            </div>
         </div>
 
-  {/* Center: Mode Toggles (The Floating Pill) */}
+  {/* Center: Global Mode Toggle */}
   <div className="bg-[#0A0A0B] border border-white/10 p-1 rounded-lg flex items-center gap-1">
     <button 
       onClick={() => setViewMode("edit")} 
-      className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-[#FF4F4F] text-white shadow-lg shadow-red-900/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+      className={`px-4 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-[#FF4F4F] text-white shadow-lg shadow-red-900/20' : 'text-zinc-500 hover:text-zinc-300'}`}
     >
       Write
     </button>
     <button 
       onClick={() => setViewMode("preview")} 
-      className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'preview' ? 'bg-[#FF4F4F] text-white shadow-lg shadow-red-900/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+      className={`px-4 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'preview' ? 'bg-[#FF4F4F] text-white shadow-lg shadow-red-900/20' : 'text-zinc-500 hover:text-zinc-300'}`}
     >
       Preview
     </button>
   </div>
 
-  {/* Right: Actions */}
-  <div className="flex items-center gap-3">
+  {/* Right: User & Status */}
+  <div className="flex items-center gap-4">
      <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-       <div className="size-2 rounded-full bg-emerald-500 animate-pulse"/>
+       <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse"/>
        Live Sync
      </div>
-     <div className="w-px h-4 bg-white/10 mx-2"/>
-     <div className="size-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs text-white">
-       <User size={14}/>
+     <div className="size-7 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border border-white/10 flex items-center justify-center text-xs text-white">
+       <User size={12}/>
      </div>
   </div>
-    </header>
+</header>
 
-    {/* 2. MAIN WORKSPACE (The Two Floating Panels) */}
-    <div className="flex-1 flex items-stretch overflow-hidden">
-      <div className="mx-auto w-full max-w-[1400px] flex gap-4 px-6 pb-2 min-h-0">
-        {/* --- LEFT PANEL: SIDEBAR CARD --- */}
-        <div className="w-[380px] bg-[#0A0A0B] border border-white/10 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative group">
-           {/* Search & Tabs */}
-           <div className="p-4 space-y-4 border-b border-white/5">
-              <div className="relative">
-                 <Search size={14} className="absolute left-3 top-2.5 text-zinc-600" />
-                 <input 
-                   className="w-full bg-[#151516] border border-white/5 rounded-lg py-2 pl-9 pr-10 text-xs text-zinc-300 focus:outline-none focus:border-white/10 transition-colors placeholder:text-zinc-700"
-                   placeholder="Search commits..."
-                   value={searchQuery}
-                   onChange={e => setSearchQuery(e.target.value)}
-                 />
-                 <span className="absolute right-3 top-2.5 text-[10px] text-zinc-700 border border-white/5 px-1 rounded">⌘K</span>
-              </div>
-              
-              {/* Segmented Control Tabs */}
-              <div className="grid grid-cols-3 gap-1 bg-[#151516] p-1 rounded-lg">
-                {["ALL", "FEAT", "FIX"].map(tab => (
-                   <button
-                     key={tab}
-                     onClick={() => setActiveTab(tab as any)}
-                     className={`py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === tab ? 'bg-[#2A2A2B] text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
-                   >
-                     {tab}
-                   </button>
-                ))}
-              </div>
-           </div>
-
-           {/* Commit List */}
-           <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-              {filteredCommits.map(c => {
-                const isSelected = selected.has(c.hash);
-                return (
-                  <div key={c.hash} onClick={() => toggleCommit(c.hash)} className={`p-3 rounded-xl border transition-all cursor-pointer select-none ${isSelected ? 'bg-[#FF4F4F]/5 border-[#FF4F4F]/20' : 'bg-transparent border-transparent hover:bg-white/5'}`}>
-                     <div className="flex items-center justify-between mb-2">
-                        <span className={`text-[9px] font-bold uppercase tracking-wider ${c.type === 'feat' ? 'text-emerald-500' : c.type === 'fix' ? 'text-amber-500' : 'text-blue-500'}`}>{c.type}</span>
-                        <span className="text-[10px] text-zinc-600 font-mono opacity-60">{c.hash.substring(0,6)}</span>
-                     </div>
-                     <p className={`text-xs leading-relaxed line-clamp-2 ${isSelected ? 'text-zinc-100' : 'text-zinc-400'}`}>{c.message}</p>
-                  </div>
-                )
-              })}
-           </div>
-
-           {/* Sidebar Footer (Floating inside card) */}
-           <div className="p-3 border-t border-white/5 bg-[#0A0A0B] flex items-center justify-between">
-              <span className="text-[10px] text-zinc-500">{selected.size} selected</span>
-              {selected.size > 0 && <button onClick={() => setSelected(new Set())} className="text-[10px] text-[#FF4F4F] font-medium hover:underline">Clear</button>}
-           </div>
+{/* 2. MAIN WORKSPACE (The Two Floating Panels) */}
+<div className="flex-1 flex justify-center px-6 py-6 min-h-0">
+  <div className="w-full max-w-7xl flex gap-6">
+  
+  {/* --- LEFT CARD: SIDEBAR --- */}
+  <div className="w-[380px] bg-[#0A0A0B] border border-white/10 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(2,6,23,0.7)] overflow-hidden">
+     {/* Search & Tabs */}
+     <div className="p-4 space-y-3 border-b border-white/5">
+        <div className="relative group">
+           <Search size={14} className="absolute left-3 top-2.5 text-zinc-600 group-focus-within:text-zinc-400 transition-colors" />
+           <input 
+             className="w-full bg-[#151516] border border-white/5 rounded-lg py-2 pl-9 pr-10 text-xs text-zinc-300 focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600"
+             placeholder="Search commits..."
+             value={searchQuery}
+             onChange={e => setSearchQuery(e.target.value)}
+           />
+           <span className="absolute right-3 top-2.5 text-[10px] text-zinc-600 border border-white/5 px-1.5 rounded bg-white/5">⌘K</span>
         </div>
+        
+        <div className="flex p-1 bg-[#151516] rounded-lg border border-white/5">
+          {["ALL", "FEAT", "FIX"].map(tab => (
+             <button
+               key={tab}
+               onClick={() => setActiveTab(tab as any)}
+               className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab === tab ? 'bg-[#2A2A2B] text-zinc-100 shadow-sm border border-white/5' : 'text-zinc-600 hover:text-zinc-400'}`}
+             >
+               {tab}
+             </button>
+          ))}
+        </div>
+     </div>
 
-        {/* --- RIGHT PANEL: EDITOR CARD --- */}
-        <div className="flex-1 bg-[#0A0A0B] border border-white/10 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
-           {/* Editor Toolbar (Inside the card) */}
-           <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-[#0A0A0B]">
+     {/* Commit List */}
+     <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        {filteredCommits.map(c => {
+          const isSelected = selected.has(c.hash);
+          return (
+            <div key={c.hash} onClick={() => toggleCommit(c.hash)} className={`p-3 rounded-xl border transition-all cursor-pointer select-none group ${isSelected ? 'bg-[#FF4F4F]/5 border-[#FF4F4F]/20' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/5'}`}>
+               <div className="flex items-center justify-between mb-1.5">
+                  <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${c.type === 'feat' ? 'text-emerald-400 bg-emerald-400/10' : c.type === 'fix' ? 'text-amber-400 bg-amber-400/10' : 'text-blue-400 bg-blue-400/10'}`}>{c.type}</span>
+                  <span className="text-[10px] text-zinc-600 font-mono group-hover:text-zinc-500 transition-colors">{c.hash.substring(0,6)}</span>
+               </div>
+               <p className={`text-xs leading-relaxed line-clamp-2 ${isSelected ? 'text-zinc-200' : 'text-zinc-500 group-hover:text-zinc-400'}`}>{c.message}</p>
+            </div>
+          )
+        })}
+     </div>
+
+     {/* Sidebar Footer */}
+     <div className="p-3 border-t border-white/5 bg-[#0A0A0B] flex items-center justify-between">
+        <span className="text-[10px] text-zinc-500 font-medium">{selected.size} selected</span>
+        {selected.size > 0 && <button onClick={() => setSelected(new Set())} className="text-[10px] text-[#FF4F4F] font-medium hover:underline">Clear</button>}
+     </div>
+  </div>
+
+  {/* --- RIGHT CARD: EDITOR --- */}
+  <div className="flex-1 bg-[#0A0A0B] border border-white/10 rounded-2xl flex flex-col shadow-[0_20px_50px_rgba(2,6,23,0.7)] overflow-hidden relative">
+     
+     {/* Editor Toolbar */}
+     <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-[#0A0A0B]">
         <div className="flex items-center gap-3">
-           <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-xs text-zinc-400 font-mono">release_notes.md</div>
-           <div className="flex items-center gap-2">
-             {!editingVersion ? (
-               <div className="flex items-baseline gap-2">
-                 <span className="text-[10px] text-zinc-400 font-mono">Release Notes</span>
-                 <button onClick={() => { setEditingVersion(true); setTimeout(() => versionInputRef.current?.focus(), 20); }} className="text-[#FF4F4F] font-bold">{versionTag}</button>
-               </div>
-             ) : (
-               <div className="flex items-center gap-2">
-                 <input ref={versionInputRef} value={versionDraft} onChange={(e) => setVersionDraft(e.target.value)} className="bg-[#0A0A0B] border border-white/10 px-2 py-1 rounded text-xs text-white" />
-                 <button onClick={() => { setVersionTag(versionDraft || versionTag); setEditingVersion(false); }} className="px-2 py-1 bg-white/5 rounded text-xs">Save</button>
-                 <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(false); }} className="px-2 py-1 text-xs text-zinc-400">Cancel</button>
-               </div>
-             )}
-           </div>
-           <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-bold tracking-wider">DRAFT</span>
+           <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-[11px] text-zinc-400 font-mono">release_notes.md</div>
+           <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-bold tracking-wider uppercase">Draft</span>
         </div>
-           <div className="flex items-center gap-2">
-              <button onClick={async () => {
-                try {
-                  if (editorRef.current && typeof editorRef.current.getMarkdown === 'function') {
-                    const md = await editorRef.current.getMarkdown();
-                    await navigator.clipboard.writeText(md);
-                    toast.success('Copied release body to clipboard');
-                  } else if (generated) {
-                    await navigator.clipboard.writeText(generated);
-                    toast.success('Copied release body to clipboard');
-                  }
-                } catch (e) {
-                  toast.error('Copy failed');
-                }
-              }} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
-                 <Copy size={12}/> Copy
-              </button>
-                 <button onClick={handleGenerate} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
-                    <RotateCcw size={12}/> Regenerate
-                 </button>
-                 <button onClick={handlePublish} className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#FF4F4F] to-[#DD3333] hover:from-[#E13333] hover:to-[#C02222] text-xs font-bold text-white shadow-lg shadow-red-900/20 transition-all ml-2">
-                    <Rocket size={12}/> Publish
-                 </button>
-              </div>
-           </div>
+        <div className="flex items-center gap-2">
+            <button onClick={handleCopy} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
+               <Copy size={13}/> <span className="hidden sm:inline">Copy</span>
+            </button>
+           <button onClick={handleGenerate} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-medium text-zinc-400 transition-colors">
+               <RotateCcw size={13}/> <span className="hidden sm:inline">Regen</span>
+           </button>
+           <button onClick={handlePublish} className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#FF4F4F] to-[#D03030] hover:from-[#FF6060] hover:to-[#E04040] text-xs font-bold text-white shadow-lg shadow-red-900/20 transition-all ml-2 border border-red-500/20">
+               <Rocket size={13}/> Publish
+           </button>
+        </div>
+     </div>
 
-           {/* The Editor Canvas */}
-           <div className="flex-1 overflow-hidden relative bg-[#0A0A0B]">
-             {generated ? (
-               <div className="h-full flex flex-col">
-                 {/* Metadata Header inside the document */}
-                 <div className="px-10 pt-10 pb-2">
-                    <h1 className="text-4xl font-bold text-white tracking-tight mb-3">Release Notes <span className="text-[#FF4F4F]">{versionTag}</span></h1>
-                    <div className="flex items-center gap-6 text-xs text-zinc-500 font-mono">
-                       <span className="flex items-center gap-2"><Calendar size={14}/> {new Date().toLocaleDateString()}</span>
-                        <span className="flex items-center gap-2"><User size={14}/> OpenLog AI</span>
-                    </div>
-                 </div>
-                 {/* The Actual Editor */}
-                 <div className="flex-1 pl-6 pr-2">
-                    <Editor 
-                      ref={editorRef}
-                      initialMarkdown={generated} 
-                      onChange={setGenerated}
-                      editable={viewMode === 'edit'}
-                    />
+     {/* Editor Canvas */}
+     <div className="flex-1 overflow-hidden relative bg-[#0A0A0B]">
+       {generated ? (
+         <div className="h-full flex flex-col">
+            {/* Metadata Header (Inside Document) */}
+            <div className="px-10 pt-10 pb-4 flex flex-col">
+               <div className="flex items-center justify-between">
+                 <h1 className="text-5xl font-extrabold text-white tracking-tight mb-3 leading-tight">Release Notes <span className="text-[#FF6363] ml-3 font-semibold">{versionTag}</span></h1>
+                 <div className="flex items-center gap-2">
+                   {editingVersion ? (
+                     <div className="flex items-center gap-2">
+                       <input ref={versionInputRef} value={versionDraft} onChange={e => setVersionDraft(e.target.value)} className="bg-[#0B0B0C] border border-white/10 px-3 py-1 rounded text-sm text-white focus:outline-none" />
+                       <button onClick={() => { setVersionTag(versionDraft); setEditingVersion(false); toast.success('Version updated'); }} className="px-3 py-1 bg-[#0A0A0B] border border-white/10 rounded text-sm text-emerald-300">Save</button>
+                       <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(false); }} className="px-3 py-1 bg-transparent border border-white/5 rounded text-sm text-zinc-400">Cancel</button>
+                     </div>
+                   ) : (
+                     <button onClick={() => setEditingVersion(true)} className="px-3 py-1 bg-transparent border border-white/5 rounded text-sm text-zinc-400 hover:bg-white/5">Edit Version</button>
+                   )}
                  </div>
                </div>
-             ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30">
-                   <Sparkles size={48} className="text-zinc-500 mb-4"/>
-                   <p className="text-zinc-500 text-sm font-mono">Select commits to generate draft</p>
-                </div>
-             )}
-           </div>
-        </div>
-      </div>
-    </div>
 
-    {/* 3. GLOBAL COMMAND FOOTER */}
-    <footer className="h-10 border-t border-white/5 bg-[#050505] flex items-center justify-between px-6 shrink-0 z-20">
-       <div className="flex items-center gap-4 text-[10px] text-zinc-600 font-mono">
-          <span className="flex items-center gap-1.5"><kbd className="bg-white/10 px-1.5 py-0.5 rounded text-zinc-400 min-w-[20px] text-center">J</kbd> <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-zinc-400 min-w-[20px] text-center">K</kbd> Navigate</span>
-          <span className="flex items-center gap-1.5"><kbd className="bg-white/10 px-1.5 py-0.5 rounded text-zinc-400">SPACE</kbd> Select</span>
-       </div>
-       <div className="flex items-center gap-4 text-[10px] text-zinc-600 font-mono">
-           <span className="flex items-center gap-1.5"><kbd className="bg-white/10 px-1.5 py-0.5 rounded text-zinc-400">CMD</kbd> <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-zinc-400">ENTER</kbd> Generate</span>
-           <span className="flex items-center gap-2 text-zinc-700"><Sparkles size={10} className="text-[#FF4F4F]"/> Powered by Gemini 1.5</span>
-       </div>
-    </footer>
+               <div className="flex items-center gap-6 text-xs text-zinc-500 font-mono border-b border-white/5 pb-6">
+                  <span className="flex items-center gap-2"><Calendar size={14}/> {new Date().toLocaleDateString()}</span>
+                  <span className="flex items-center gap-2"><User size={14}/> OpenLog AI</span>
+               </div>
+            </div>
+           {/* The Actual Editor */}
+            <div className="flex-1 pl-6 pr-2">
+               <Editor 
+                 ref={editorRef}
+                 initialMarkdown={generated} 
+                 onChange={setGenerated}
+                 editable={viewMode === 'edit'}
+               />
+            </div>
+         </div>
+       ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 select-none">
+             <Sparkles size={64} className="text-zinc-500 mb-6"/>
+             <p className="text-zinc-500 text-sm font-mono tracking-wide">SELECT COMMITS TO GENERATE</p>
+          </div>
+       )}
+     </div>
+  </div>
+</div>
+</div>
+
+{/* 3. GLOBAL FOOTER */}
+<footer className="h-9 border-t border-white/5 bg-[#050505] flex items-center justify-between px-6 shrink-0 z-20">
+   <div className="flex items-center gap-5 text-[10px] text-zinc-600 font-mono">
+      <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500 min-w-[20px] text-center">J</kbd> <kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500 min-w-[20px] text-center">K</kbd> Navigate</span>
+      <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">SPACE</kbd> Select</span>
+   </div>
+   <div className="flex items-center gap-4 text-[10px] text-zinc-600 font-mono">
+       <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">CMD</kbd> + <kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">ENTER</kbd> Generate</span>
+       <span className="flex items-center gap-2 text-zinc-700 ml-4 opacity-50"><Sparkles size={10} className="text-[#FF4F4F]"/> Powered by Gemini 1.5</span>
+   </div>
+</footer>
 
     </div>
   );
