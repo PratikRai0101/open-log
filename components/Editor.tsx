@@ -98,17 +98,33 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     // Fallback: set contentEditable on the actual DOM content container inside this component.
     // BlockNote may render its internal DOM asynchronously, so retry a few times if the
     // content element isn't present yet.
+    const selectors = [
+      '.bn-editor__content',
+      '.bn-view__content',
+      '.bn-container',
+      '.bn-root',
+      '.blocknote-root',
+      '.blocknote-editor'
+    ];
+
     const trySetContentEditable = () => {
       try {
-        const root = containerRef.current;
+        const root = containerRef.current || document.body;
         if (!root) return false;
-        const contentEl = root.querySelector('.bn-editor__content, .bn-view__content') as HTMLElement | null;
-        if (contentEl) {
-          contentEl.contentEditable = editable ? 'true' : 'false';
-          if (!editable) contentEl.setAttribute('aria-readonly', 'true');
-          else contentEl.removeAttribute('aria-readonly');
-          return true;
-        }
+
+        let found = false;
+        // set contentEditable on any matching elements within root
+        selectors.forEach((sel) => {
+          const els = Array.from(root.querySelectorAll<HTMLElement>(sel));
+          els.forEach((el) => {
+            el.contentEditable = editable ? 'true' : 'false';
+            if (!editable) el.setAttribute('aria-readonly', 'true');
+            else el.removeAttribute('aria-readonly');
+            found = true;
+          });
+        });
+
+        return found;
       } catch (e) {
         // ignore
       }
@@ -205,14 +221,19 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   // Register window-level capture handlers to prevent input for any BlockNote root
   // on the page when this editor is in read-only mode.
   useEffect(() => {
+    const globalSelectors = ['.blocknote-root', '.bn-container', '.bn-root', '.blocknote-editor'];
+
     function blockIfBlocknoteTarget(e: Event) {
       if (editable) return;
       const t = e.target as HTMLElement | null;
       if (!t) return;
       try {
-        if (t.closest && t.closest('.blocknote-root')) {
-          e.preventDefault();
-          e.stopPropagation();
+        for (const sel of globalSelectors) {
+          if (t.closest && t.closest(sel)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
         }
       } catch (err) {
         // ignore
