@@ -1,13 +1,12 @@
 import React from "react";
 import { getUserRepos, Repo as GHRepo } from "../lib/github";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { formatDistanceToNow } from "date-fns";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import LinkGitHub from "../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 
-const ScrollHint = dynamic(() => import("../components/ScrollHint"), { ssr: false });
+import ScrollHint from "../components/ScrollHint";
 
 export default async function Dashboard() {
   const result = await getUserRepos();
