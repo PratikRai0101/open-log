@@ -266,8 +266,8 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
       ];
       // allow navigation and modifier keys
       if (allowed.includes(ev.key)) return;
-      // prevent printable characters and editing keys
-      const preventKeys = ['Backspace','Delete','Enter'];
+      // prevent printable characters and editing keys except Enter (allow Enter for newline navigation in previews)
+      const preventKeys = ['Backspace','Delete'];
       if (preventKeys.includes(ev.key) || ev.key.length === 1) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -379,62 +379,8 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     return () => window.removeEventListener('keydown', handleShortcuts, false);
   }, [editable, editor]);
 
-  // Safe paste handler: intercept only the 'paste' event (not keydown) when
-  // our editor has focus and is editable. Prefer BlockNote's paste APIs
-  // (pasteMarkdown / pasteText) when available; otherwise allow the native
-  // paste to proceed (this preserves image/HTML paste and IME behavior).
-  useEffect(() => {
-    if (!editable) return;
-    const rootEl = containerRef.current;
-    if (!rootEl) return;
-
-    const onPaste = (evt: Event) => {
-      const e = evt as ClipboardEvent;
-      // run async work without making the listener itself async (keeps types simple)
-      (async () => {
-        try {
-          // Only act when the editor/container currently contains focus
-          if (!(document.activeElement && rootEl.contains(document.activeElement))) return;
-
-          const types = e.clipboardData?.types || [];
-          if (!(types.includes?.('text/plain') || types.includes?.('text')) && types.length > 0) {
-            // If clipboard contains non-text types (images/html) let native handling run
-            return;
-          }
-
-          // Read plain text from clipboard (fallback to navigator.clipboard)
-          let text = '';
-          if (e.clipboardData) text = e.clipboardData.getData('text/plain') || '';
-          if (!text && navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
-            try { text = await navigator.clipboard.readText(); } catch { /* ignore */ }
-          }
-
-          if (!text) return; // nothing textual to handle
-
-          const be = editor as any;
-          if (be && typeof be.pasteMarkdown === 'function') {
-            e.preventDefault?.();
-            e.stopPropagation?.();
-            await be.pasteMarkdown(text);
-            return;
-          }
-          if (be && typeof be.pasteText === 'function') {
-            e.preventDefault?.();
-            e.stopPropagation?.();
-            await be.pasteText(text);
-            return;
-          }
-
-          // Otherwise fall back to native paste (do nothing)
-        } catch {
-          // On any error, allow native paste to proceed
-        }
-      })();
-    };
-
-    rootEl.addEventListener('paste', onPaste, false);
-    return () => rootEl.removeEventListener('paste', onPaste, false);
-  }, [editor, editable]);
+  // We intentionally avoid intercepting paste events to preserve BlockNote's
+  // native handling of rich content, IME input and Enter/newline behavior.
 
   // Global capture: some BlockNote builds render outside our container (portal).
   // Register window-level capture handlers to prevent input for any BlockNote root
