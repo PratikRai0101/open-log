@@ -59,6 +59,8 @@ interface ModelSelectorProps {
 
 export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // renderMenu lets us keep the menu in the DOM while running a close animation
+  const [renderMenu, setRenderMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selectedModel = MODELS.find((m) => m.id === value) || MODELS[0];
@@ -67,12 +69,24 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        // trigger closing animation
         setIsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Keep the menu rendered briefly so closing animation can run
+  useEffect(() => {
+    if (isOpen) {
+      setRenderMenu(true);
+    } else {
+      // allow animation to finish before removing from DOM
+      const t = setTimeout(() => setRenderMenu(false), 220);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
 
   return (
     <div className="relative inline-block w-56" ref={dropdownRef}>
@@ -96,8 +110,11 @@ export default function ModelSelector({ value, onChange }: ModelSelectorProps) {
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute top-full left-0 w-full mt-2 bg-[#121214] border border-white/10 rounded-lg shadow-xl shadow-black overflow-hidden z-50">
+      {renderMenu && (
+        <div
+          className={`absolute top-full left-0 w-full mt-2 bg-[#121214] border border-white/10 rounded-lg shadow-xl shadow-black overflow-hidden z-50 transform transition-all duration-200 ease-out 
+            ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-1 scale-95 pointer-events-none'}`}
+        >
           {MODELS.map((model) => (
             <button
               key={model.id}

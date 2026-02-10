@@ -427,9 +427,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       </header>
 
       {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden relative z-10">
+      {/* ADDED min-h-0 to prevent vertical push out of screen */}
+      <div className="flex-1 flex overflow-hidden relative z-10 min-h-0">
         {/* SIDEBAR: Full Height, No "Card" Look */}
-         <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
+          <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0 min-h-0">
            {/* Search */}
            <div className="p-4 border-b border-white/5 space-y-3">
               <div className="relative">
@@ -449,7 +450,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            </div>
 
            {/* Minimalist Commit List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4 min-h-0">
               {filteredCommits.map(c => {
                 const isSelected = selected.has(c.hash);
                 return (
@@ -467,8 +468,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            </div>
         </aside>
 
-        {/* EDITOR AREA */}
-         <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0">
+         {/* EDITOR AREA */}
+          {/* ADDED min-w-0 and min-h-0 to contain horizontal/vertical bleed */}
+          <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0 min-h-0">
            {/* Toolbar */}
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
                <div className="flex items-center gap-2">
@@ -497,10 +499,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                </div>
             </div>
 
-           {/* Editor Canvas */}
-            <div className="flex-1 overflow-hidden relative">
+            {/* Editor Canvas */}
+             {/* Changed to allow internal scrolling here, hiding horizontal overflow */}
+             <div className="flex-1 overflow-y-auto overflow-x-hidden relative min-h-0 custom-scrollbar">
                {generated ? (
-                  <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
+                   <div className="min-h-full flex flex-col px-12 pt-8">
                      {/* Document Title Header */}
                      <div className="shrink-0 mb-8 pb-4 border-b border-white/5">
                         <h1 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">Release Notes <span className="text-[#FF4F4F]">{versionTag}</span></h1>
@@ -509,7 +512,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                         </div>
                      </div>
                      {/* The Editor */}
-                     <div className="flex-1 relative min-h-0 pb-10">
+                      <div className="flex-1 relative min-h-0 pb-20">
                         <Editor 
                           ref={editorRef}
                           initialMarkdown={generated} 
