@@ -3,8 +3,7 @@ import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels } from "../../../l
 import { generateChangelog, AIModel } from "@/lib/ai";
 import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
 
-// Resolve the model at runtime so developers can override with env or available models
-const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL });
+// Note: genAI client does not expose getGenerativeModel; we use DEFAULT_MODEL directly
 
 export async function POST(req: Request) {
   try {
@@ -191,35 +190,55 @@ ${chunkLines.join("\n")}
 
             let currentChunkText = "";
             try {
-              const gRes = await fetch(genEndpoint, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(gkey ? { "x-goog-api-key": gkey } : {}),
-                },
-                body: JSON.stringify({
-                  prompt: { text: p },
-                  temperature: Number(process.env.GENERATION_TEMPERATURE) || 0.2,
-                  maxOutputTokens: Number(process.env.GENERATION_MAX_TOKENS) || 1024,
-                }),
-              });
-
-              if (!gRes.ok) {
-                const errText = await gRes.text();
-                console.error("Google Generative API error:", errText);
-              } else {
-                const j = await gRes.json();
-                // Try common response shapes
-                let text = "";
-                if (j.candidates && Array.isArray(j.candidates) && j.candidates[0]) {
-                  if (typeof j.candidates[0].output === 'string') text = j.candidates[0].output;
-                  else if (typeof j.candidates[0].content === 'string') text = j.candidates[0].content;
-                  else if (Array.isArray(j.candidates[0].content)) text = j.candidates[0].content.map((c: any) => c.text || c).join('');
+              // Use the official Google GenAI client to generate content for Gemini
+              // in a single request per chunk. This mirrors the quickstart pattern.
+              let gRes;
+              try {
+                const genResp = await genAI.models.generateContent({
+                  model: DEFAULT_MODEL,
+                  contents: p,
+                  // generation config fields may vary; we pass text only here
+                } as any);
+                // genResp.text or genResp.output may contain the result
+                const parsed = (genResp as any).text || (genResp as any).output?.[0]?.content?.map((c: any) => c.text || "").join("");
+                if (parsed) {
+                  currentChunkText = parsed;
+                  controller.enqueue(new TextEncoder().encode(currentChunkText));
                 }
-                if (!text && typeof j.output === 'string') text = j.output;
-                if (!text && typeof j.text === 'string') text = j.text;
-                currentChunkText = text || "";
-                if (currentChunkText) controller.enqueue(new TextEncoder().encode(currentChunkText));
+              } catch (err) {
+                // Fallback to REST call if SDK fails
+                gRes = await fetch(genEndpoint, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(gkey ? { "x-goog-api-key": gkey } : {}),
+                  },
+                  body: JSON.stringify({
+                    prompt: { text: p },
+                    temperature: Number(process.env.GENERATION_TEMPERATURE) || 0.2,
+                    maxOutputTokens: Number(process.env.GENERATION_MAX_TOKENS) || 1024,
+                  }),
+                });
+              }
+
+              if (gRes) {
+                if (!gRes.ok) {
+                  const errText = await gRes.text();
+                  console.error("Google Generative API error:", errText);
+                } else {
+                  const j = await gRes.json();
+                  // Try common response shapes
+                  let text = "";
+                  if (j.candidates && Array.isArray(j.candidates) && j.candidates[0]) {
+                    if (typeof j.candidates[0].output === 'string') text = j.candidates[0].output;
+                    else if (typeof j.candidates[0].content === 'string') text = j.candidates[0].content;
+                    else if (Array.isArray(j.candidates[0].content)) text = j.candidates[0].content.map((c: any) => c.text || c).join('');
+                  }
+                  if (!text && typeof j.output === 'string') text = j.output;
+                  if (!text && typeof j.text === 'string') text = j.text;
+                  currentChunkText = text || "";
+                  if (currentChunkText) controller.enqueue(new TextEncoder().encode(currentChunkText));
+                }
               }
             } catch (err) {
               console.error("Error calling Google Generative API:", err);

@@ -1,15 +1,13 @@
 import "server-only";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 // Ensure API key is present
 const apiKey = process.env.GOOGLE_API_KEY;
-if (!apiKey) {
-  console.error("Missing GOOGLE_API_KEY in environment variables");
-}
+if (!apiKey) console.error("Missing GOOGLE_API_KEY in environment variables");
 
-export const genAI = new GoogleGenerativeAI(apiKey || "");
+export const genAI = new GoogleGenAI({ apiKey: apiKey || "" });
 
-// Helper: List models directly from the REST endpoint to pick a supported one.
+// Helper: List models via REST endpoint (still useful for debugging)
 export async function listModels() {
   if (!apiKey) return [];
   try {
@@ -18,7 +16,6 @@ export async function listModels() {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    // Expect { models: [ { name: 'models/xyz', ... } ] }
     return Array.isArray(data.models) ? data.models.map((m: any) => m.name || m) : [];
   } catch (err) {
     console.error("Failed to list models:", err);
