@@ -147,6 +147,41 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     else setSelected(new Set(initialCommits.map(c => c.hash)));
   }
 
+  // Persist selected commits to localStorage so selection survives refresh/navigation
+  useEffect(() => {
+    try {
+      const key = `openlog:selected:${repoName}`;
+      const arr = Array.from(selected);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, JSON.stringify(arr));
+      }
+    } catch (e) {
+      // noop
+    }
+  }, [selected, repoName]);
+
+  // Load persisted selection on mount
+  useEffect(() => {
+    try {
+      const key = `openlog:selected:${repoName}`;
+      if (typeof window !== "undefined") {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as string[];
+          if (Array.isArray(parsed)) {
+            // ensure we only keep hashes that still exist in the commits list
+            const valid = new Set(initialCommits.map(c => c.hash));
+            const initial = new Set(parsed.filter(h => valid.has(h)));
+            setSelected(initial);
+          }
+        }
+      }
+    } catch (e) {
+      // noop
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // AI Generation
   async function handleGenerate() {
     if (selected.size === 0) return;
@@ -460,11 +495,12 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                  </div>
                </div>
 
-               {filteredCommits.map(c => {
+               {filteredCommits.map((c, idx) => {
                  const isSelected = selected.has(c.hash);
                  return (
                    <div key={c.hash} onClick={() => toggleCommit(c.hash)} 
-                     className={`commit-item px-5 py-4 border-b border-white/2 cursor-pointer transition-colors hover:bg-white/2 flex items-start gap-3 ${isSelected ? 'bg-white/4' : ''}`}
+                     className={`commit-item px-5 py-4 border-b border-white/2 cursor-pointer transition-colors hover:bg-white/2 flex items-start gap-3 ${isSelected ? 'bg-white/4' : ''} ${isSelected ? 'animate-selection' : ''}`}
+                     style={{ animationDelay: `${Math.min(200, idx * 12)}ms` }}
                    >
                       {/* left accent */}
                       <div className={`w-1 rounded-r h-full mt-1 ${isSelected ? 'bg-rose-500' : 'bg-transparent'}`} />

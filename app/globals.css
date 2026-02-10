@@ -640,3 +640,14 @@ body{
 [class*="marker"] {
   -webkit-user-select: none !important;
 }
+
+/* Selection animation for commit rows (subtle pop-in) */
+.animate-selection {
+  animation: selection-pop 220ms cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes selection-pop {
+  0% { transform: translateY(-6px) scale(0.995); opacity: 0; }
+  60% { transform: translateY(2px) scale(1.005); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
