@@ -149,6 +149,11 @@ ${chunkLines.join("\n")}
     // generated markdown as a single response (non-streaming) to keep the
     // client experience consistent.
     const knownAIModels: (AIModel | 'gemma-27b-it')[] = ["llama-3.3-70b-versatile", "kimi-k2-turbo-preview", 'gemma-27b-it'];
+    // For non-Gemini models (Groq / Moonshot) we still want to stream the
+    // response back to the client character-by-character so the editor shows a
+    // typing effect. generateChangelog may return the full text at once, so
+    // wrap it in a ReadableStream that emits per-character and the same JSON
+    // control markers the client expects.
     if (model && knownAIModels.includes(model as any) && model !== 'gemma-27b-it') {
       try {
         // Extract plain commit messages (input may be objects or strings)
@@ -159,7 +164,35 @@ ${chunkLines.join("\n")}
         });
 
         const md = await generateChangelog(messages, model as AIModel, repo || "project");
-        return new Response(md, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
+        const readable = new ReadableStream({
+          async start(controller) {
+            try {
+              const encoder = new TextEncoder();
+              // meta header
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ meta: { totalCommits: (commits || []).length, totalChunks: 1 } }) + "\n"));
+              // chunk header
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkIndex: 0, chunkLines: messages.length }) + "\n"));
+
+              // Stream one character at a time for a typing effect
+              for (let i = 0; i < md.length; i++) {
+                controller.enqueue(encoder.encode(md.charAt(i)));
+              }
+
+              // chunk done
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ chunkDone: 0 }) + "\n"));
+
+              // final marker + merged content so client can perform a replace
+              controller.enqueue(encoder.encode("~~JSON~~" + JSON.stringify({ final: true }) + "\n"));
+              controller.enqueue(encoder.encode(md));
+              controller.close();
+            } catch (err) {
+              controller.error(err as Error);
+            }
+          },
+        });
+
+        return new Response(readable, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       } catch (err) {
         console.error("AI generateChangelog failed:", err);
         return NextResponse.json({ error: "Generation failed" }, { status: 500 });
