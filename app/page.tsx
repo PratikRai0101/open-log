@@ -77,19 +77,21 @@ export default async function Dashboard() {
         {/* Search Bar */}
         <div className="mb-12 relative group max-w-xl mx-auto">
           <div className="absolute inset-0 bg-linear-to-r from-red-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative flex items-center bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 transition-all">
-            <div className="pl-4 text-zinc-500">
-              <Search size={20} />
+            <div className="relative flex items-center bg-[#0A0A0B] border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 transition-all">
+              <div className="pl-4 text-zinc-500">
+                <Search size={20} />
+              </div>
+              <input 
+                id="repo-search"
+                type="text" 
+                placeholder="Search repositories..." 
+                className="w-full bg-transparent border-none py-4 pl-3 pr-4 text-zinc-200 placeholder-zinc-600 focus:ring-0 text-sm outline-none" 
+              />
+              <div className="pr-4">
+                <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-2 font-mono text-[10px] text-zinc-500">⌘K</kbd>
+              </div>
             </div>
-            <input 
-              type="text" 
-              placeholder="Search repositories..." 
-              className="w-full bg-transparent border-none py-4 pl-3 pr-4 text-zinc-200 placeholder-zinc-600 focus:ring-0 text-sm outline-none" 
-            />
-            <div className="pr-4">
-              <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-2 font-mono text-[10px] text-zinc-500">⌘K</kbd>
-            </div>
-          </div>
+            <QuickSearch />
         </div>
 
         {/* Repository Grid */}
