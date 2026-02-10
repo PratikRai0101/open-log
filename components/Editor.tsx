@@ -63,9 +63,15 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
       selectors.forEach((sel) => {
         const els = Array.from(root.querySelectorAll<HTMLElement>(sel));
         els.forEach((el) => {
-          el.contentEditable = editableFlag ? 'true' : 'false';
-          if (!editableFlag) el.setAttribute('aria-readonly', 'true');
-          else el.removeAttribute('aria-readonly');
+          if (editableFlag) {
+            // Prefer not to force contentEditable=true — let BlockNote manage
+            // its own editable state. Remove any forced attributes we may have set.
+            el.removeAttribute('contenteditable');
+            el.removeAttribute('aria-readonly');
+          } else {
+            el.contentEditable = 'false';
+            el.setAttribute('aria-readonly', 'true');
+          }
           found = true;
         });
       });
@@ -187,13 +193,17 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
         if (!root) return false;
 
         let found = false;
-        // set contentEditable on any matching elements within root
+        // set or clear contentEditable on any matching elements within root
         selectors.forEach((sel) => {
           const els = Array.from(root.querySelectorAll<HTMLElement>(sel));
           els.forEach((el) => {
-            el.contentEditable = editable ? 'true' : 'false';
-            if (!editable) el.setAttribute('aria-readonly', 'true');
-            else el.removeAttribute('aria-readonly');
+            if (editable) {
+              el.removeAttribute('contenteditable');
+              el.removeAttribute('aria-readonly');
+            } else {
+              el.contentEditable = 'false';
+              el.setAttribute('aria-readonly', 'true');
+            }
             found = true;
           });
         });
