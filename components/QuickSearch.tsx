@@ -2,9 +2,24 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-export default function QuickSearch() {
+interface RepoShort {
+  id: number;
+  name: string;
+  full_name: string;
+  description?: string | null;
+  updated_at?: string;
+}
+
+interface QuickSearchProps {
+  initialRepos?: RepoShort[];
+}
+
+export default function QuickSearch({ initialRepos = [] }: QuickSearchProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<RepoShort[]>([]);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
@@ -29,10 +44,128 @@ export default function QuickSearch() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // lightweight visual indicator only — the actual input lives in page.tsx
+  // wire the input events from the DOM input into this client component
+  useEffect(() => {
+    const el = document.getElementById('repo-search') as HTMLInputElement | null;
+    if (!el) return;
+
+    inputRef.current = el;
+
+    let timeout: number | null = null;
+    const onInput = () => {
+      const v = el.value || '';
+      setQuery(v);
+      if (timeout) window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {
+        performSearch(v || '');
+      }, 150) as unknown as number;
+    };
+
+    const onKey = (ev: KeyboardEvent) => {
+      if (!visible) return;
+      if (ev.key === 'ArrowDown') {
+        ev.preventDefault();
+        setActive((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
+      } else if (ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        setActive((i) => Math.max(0, i - 1));
+      } else if (ev.key === 'Enter') {
+        ev.preventDefault();
+        const sel = results[active];
+        if (sel) window.location.href = `/generate/${sel.full_name}`;
+      }
+    };
+
+    el.addEventListener('input', onInput, { passive: true });
+    window.addEventListener('keydown', onKey);
+
+    return () => {
+      el.removeEventListener('input', onInput as any);
+      window.removeEventListener('keydown', onKey);
+      if (timeout) window.clearTimeout(timeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, results, active]);
+
+  useEffect(() => {
+    if (!query) {
+      setResults([]);
+      setActive(0);
+      return;
+    }
+    performSearch(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  function performSearch(q: string) {
+    if (!q) {
+      setResults([]);
+      setActive(0);
+      return;
+    }
+    const needle = q.trim().toLowerCase();
+    const scored = initialRepos.map((r) => {
+      const name = (r.name || '').toLowerCase();
+      const desc = (r.description || '').toLowerCase();
+      let score = 0;
+      if (name === needle) score += 100;
+      else if (name.startsWith(needle)) score += 70;
+      else if (name.includes(needle)) score += 40;
+      if (desc.startsWith(needle)) score += 30;
+      else if (desc.includes(needle)) score += 10;
+      // recency boost
+      const updated = r.updated_at ? Date.parse(r.updated_at) : 0;
+      return { r, score, updated };
+    });
+
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.updated || 0) - (a.updated || 0);
+    });
+
+    setResults(scored.slice(0, 8).map((s) => s.r));
+    setActive(0);
+    setVisible(true);
+  }
+
+  // click outside to dismiss
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const el = document.getElementById('repo-search');
+      const target = e.target as Node | null;
+      if (!el) return;
+      if (target && el.contains(target)) return;
+      setVisible(false);
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
   return (
-    <div aria-hidden className={`fixed left-6 top-22 z-40 transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div aria-hidden={false} className={`fixed left-6 top-22 z-40 transition-opacity ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="bg-white/3 text-zinc-200 px-3 py-2 rounded-md text-sm shadow">Press ⌘K to focus search</div>
+      {visible && results.length > 0 && (
+        <div className="mt-2 w-[420px] max-h-96 overflow-auto bg-[#0A0A0B] border border-white/6 rounded-md shadow-lg py-1">
+          <ul role="listbox" className="outline-none">
+            {results.map((r, i) => (
+              <li
+                key={r.id}
+                role="option"
+                aria-selected={i === active}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => (window.location.href = `/generate/${r.full_name}`)}
+                className={`px-3 py-2 cursor-pointer ${i === active ? 'bg-white/6' : 'hover:bg-white/3'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-zinc-100 truncate max-w-[300px]">{r.name}</div>
+                  <div className="text-xs text-zinc-500">{r.full_name.split('/')[0]}</div>
+                </div>
+                {r.description && <div className="text-[12px] text-zinc-500 truncate mt-1">{r.description}</div>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
