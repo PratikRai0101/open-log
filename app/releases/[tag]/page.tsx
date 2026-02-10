@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 const RELEASE = {
   version: "v2.4.0",
   date: "Jan 24, 2024",
-  author: "ShipLog AI",
+  author: "OpenLog AI",
   content: `
 ## 🚀 New Features
 

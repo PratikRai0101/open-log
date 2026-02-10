@@ -345,9 +345,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       <header className="h-16 px-6 flex items-center justify-between shrink-0 z-20">
         {/* Left: Brand & Breadcrumbs */}
         <div className="flex items-center gap-4 text-sm">
-           <div className="flex items-center gap-2 text-zinc-500">
-             <div className="size-6 bg-white/10 rounded flex items-center justify-center text-white font-bold text-xs">SL</div>
-             <span className="text-zinc-300 font-medium">ShipLog</span>
+            <div className="flex items-center gap-2 text-zinc-500">
+             <div className="size-6 bg-white/10 rounded flex items-center justify-center text-white font-bold text-xs">OL</div>
+             <span className="text-zinc-300 font-medium">OpenLog</span>
              <span>/</span>
              <span>{repoName}</span>
            </div>
@@ -497,7 +497,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                     <h1 className="text-4xl font-bold text-white tracking-tight mb-3">Release Notes <span className="text-[#FF4F4F]">{versionTag}</span></h1>
                     <div className="flex items-center gap-6 text-xs text-zinc-500 font-mono">
                        <span className="flex items-center gap-2"><Calendar size={14}/> {new Date().toLocaleDateString()}</span>
-                       <span className="flex items-center gap-2"><User size={14}/> ShipLog AI</span>
+                        <span className="flex items-center gap-2"><User size={14}/> OpenLog AI</span>
                     </div>
                  </div>
                  {/* The Actual Editor */}
