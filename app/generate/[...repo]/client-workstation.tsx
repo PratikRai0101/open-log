@@ -182,6 +182,17 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // compute selected counts by type
+  const selectedTypeCounts = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!selected || selected.size === 0) return map;
+    for (const c of initialCommits) {
+      if (!selected.has(c.hash)) continue;
+      map[c.type] = (map[c.type] || 0) + 1;
+    }
+    return map;
+  }, [selected, initialCommits]);
+
   // AI Generation
   async function handleGenerate() {
     if (selected.size === 0) return;
@@ -489,6 +500,12 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                  <div className="flex items-center gap-3">
                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Select Commits</span>
                    <span className="text-[11px] text-zinc-300 bg-white/3 px-2 py-0.5 rounded text-xs font-mono">{selected.size} selected</span>
+                   {/* selected type chips */}
+                   <div className="flex items-center gap-2 ml-2">
+                     {Object.entries(selectedTypeCounts).map(([type, count]) => (
+                       <span key={type} className="text-[10px] bg-white/4 px-2 py-0.5 rounded text-xs font-mono text-zinc-200">{type.toUpperCase()}: {count}</span>
+                     ))}
+                   </div>
                  </div>
                  <div>
                    <button onClick={toggleAll} className="text-[10px] text-zinc-400 bg-transparent border border-white/6 px-2 py-1 rounded hover:bg-white/5">{selected.size === initialCommits.length ? 'Unselect All' : 'Select All'}</button>
