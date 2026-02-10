@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+// Force Edge runtime to avoid Node.js response buffering so streams arrive
+// to the client as they are enqueued. Also force dynamic to prevent ISR
+// style caching which can interfere with streaming.
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 // Temporarily disable Gemini server path: keep imports but comment out usage where practical.
 import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels, resolveModel } from "../../../lib/gemini";
 import { generateChangelog, AIModel } from "@/lib/ai";
@@ -174,10 +179,21 @@ ${chunkLines.join("\n")}
               async start(controller) {
                 const encoder = new TextEncoder();
                 try {
-                  for await (const part of chatCompletion as any) {
+            // Small per-chunk delay to visually throttle Groq's extremely fast
+            // token stream (Groq/Llama can finish the whole output in <100ms).
+            // Allow override via GROQ_STREAM_DELAY_MS env var for tuning.
+            const GROQ_STREAM_DELAY_MS = Number(process.env.GROQ_STREAM_DELAY_MS) || 15;
+            for await (const part of chatCompletion as any) {
                     try {
                       const text = (part?.choices?.[0]?.delta?.content) || (part?.choices?.[0]?.delta?.text) || part?.text || part?.content || '';
-                      if (text) controller.enqueue(encoder.encode(String(text)));
+                      if (text) {
+                        controller.enqueue(encoder.encode(String(text)));
+                        // tiny artificial delay so the browser has time to render
+                        // incremental chunks instead of receiving the entire
+                        // payload in one buffered write.
+                        // eslint-disable-next-line no-await-in-loop
+                        await new Promise((res) => setTimeout(res, GROQ_STREAM_DELAY_MS));
+                      }
                     } catch (e) {
                       // ignore malformed chunk
                     }
@@ -190,7 +206,7 @@ ${chunkLines.join("\n")}
               }
             });
 
-            return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache, no-transform' } });
+            return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive' } });
           } catch (err) {
             // If streaming via groq-sdk isn't available, fall back to emulated stream below.
           }
