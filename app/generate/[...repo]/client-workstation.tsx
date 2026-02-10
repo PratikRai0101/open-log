@@ -13,6 +13,7 @@ import {
   ChevronLeft, 
   PenLine, 
   Eye,
+  Lock,
   Rocket
 } from "lucide-react";
 import Link from "next/link";
@@ -362,17 +363,24 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
           
           {/* Tabs: Write vs Preview */}
           <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/5">
-             <button 
-               onClick={() => setViewMode("edit")}
-               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "edit" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-               <PenLine size={14} /> Write
-             </button>
-             <button 
-               onClick={() => setViewMode("preview")}
-               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "preview" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-               <Eye size={14} /> Preview
-             </button>
-          </div>
+              <button 
+                onClick={() => setViewMode("edit")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "edit" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <PenLine size={14} /> Write
+              </button>
+              <button 
+                onClick={() => setViewMode("preview")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === "preview" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Eye size={14} /> Preview
+              </button>
+              {/* Read-only indicator when in Preview */}
+              {viewMode === "preview" && (
+                <div className="ml-3 px-2 py-1 rounded-md bg-white/3 text-xs text-zinc-200 flex items-center gap-2" title="Preview (read-only)">
+                  <Lock size={14} />
+                  <span>Read-only</span>
+                </div>
+              )}
+           </div>
 
             <div className="flex items-center gap-3">
               {/* Version Input */}
