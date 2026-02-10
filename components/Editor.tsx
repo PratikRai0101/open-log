@@ -284,12 +284,16 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     window.addEventListener('keydown', blockIfBlocknoteTarget as EventListener, true);
     window.addEventListener('paste', blockIfBlocknoteTarget as EventListener, true);
     window.addEventListener('drop', blockIfBlocknoteTarget as EventListener, true);
+    window.addEventListener('pointerdown', blockIfBlocknoteTarget as EventListener, true);
+    window.addEventListener('click', blockIfBlocknoteTarget as EventListener, true);
 
     return () => {
       window.removeEventListener('beforeinput', blockIfBlocknoteTarget as EventListener, true);
       window.removeEventListener('keydown', blockIfBlocknoteTarget as EventListener, true);
       window.removeEventListener('paste', blockIfBlocknoteTarget as EventListener, true);
       window.removeEventListener('drop', blockIfBlocknoteTarget as EventListener, true);
+      window.removeEventListener('pointerdown', blockIfBlocknoteTarget as EventListener, true);
+      window.removeEventListener('click', blockIfBlocknoteTarget as EventListener, true);
     };
   }, [editable]);
 
@@ -329,12 +333,24 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
   return (
     <div
       ref={containerRef}
-      className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 ${!editable ? 'opacity-90 bn-readonly' : ''}`}>
+      className={`h-full bg-[#0A0A0B] rounded-xl overflow-hidden border border-white/10 relative ${!editable ? 'opacity-90 bn-readonly' : ''}`}>
       <BlockNoteView
         editor={editor}
         theme="dark"
         className="min-h-full py-4 pl-4 pr-2"
       />
+
+      {/* Capture interactions in preview mode with an overlay so BlockNote's
+          floating UI (toolbars, block handles) can't be used. The overlay is
+          transparent to preserve visuals but intercepts pointer events. */}
+      {!editable && (
+        <div
+          aria-hidden
+          className="absolute inset-0 z-20 pointer-events-auto"
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        />
+      )}
     </div>
   );
 });
