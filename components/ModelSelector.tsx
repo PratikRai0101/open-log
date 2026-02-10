@@ -15,7 +15,8 @@ const MODELS: ModelOption[] = [
   {
     id: "gemini",
     name: "Google Gemini",
-    badge: "Streaming",
+    // Gemini is lower-latency streaming but may produce lower quality
+    badge: "Streaming (experimental)",
     // use external jsdelivr CDN icons so dropdown can load them remotely
     iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/google-gemini.svg",
     icon: (
@@ -34,7 +35,8 @@ const MODELS: ModelOption[] = [
   {
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
-    badge: "Fast",
+    // Groq is fast and generally higher quality in our tests
+    badge: "Fast (recommended)",
     iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grok-dark.svg",
     icon: (
       // Lightning / G glyph
