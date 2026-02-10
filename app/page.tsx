@@ -12,8 +12,8 @@ export default async function LandingPage() {
   }
 
   return (
-    // Use native page scrolling so users can scroll the full marketing page
-    <div className="min-h-screen h-screen overflow-y-auto bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white">
+    // Keep global layout behaviour; use an inner scroll container with the project's custom-scrollbar
+    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white">
       {/* NAV BAR */}
       <nav className="fixed top-0 w-full border-b border-white/5 bg-[#050505]/80 backdrop-blur-md z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -31,9 +31,10 @@ export default async function LandingPage() {
           </div>
         </div>
       </nav>
-
-      {/* HERO SECTION */}
-      <section className="relative pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center min-h-[80vh]">
+      {/* Inner scroll region: matches other product pages that use `.custom-scrollbar` */}
+      <main className="custom-scrollbar max-h-[calc(100vh-4rem)] overflow-y-auto">
+        {/* HERO SECTION */}
+        <section className="relative pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center min-h-[80vh]">
         {/* Background Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#FF4F4F]/20 blur-[120px] rounded-full pointer-events-none" />
         
@@ -59,10 +60,10 @@ export default async function LandingPage() {
             <Github size={18} /> View Source
           </a>
         </div>
-      </section>
+        </section>
 
-      {/* FEATURES GRID */}
-      <section className="py-24 px-6 border-t border-white/5 bg-[#0A0A0B]">
+        {/* FEATURES GRID */}
+        <section className="py-24 px-6 border-t border-white/5 bg-[#0A0A0B]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white mb-4">A complete release workflow.</h2>
@@ -104,14 +105,15 @@ export default async function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* FOOTER */}
-      <footer className="py-8 border-t border-white/5 text-center">
-        <p className="text-zinc-600 text-sm font-mono">
-          Built with 🖤 by <a href="https://github.com/PratikRai0101" className="text-zinc-400 hover:text-white transition-colors">Pratik Rai</a>. Open source under the MIT License.
-        </p>
-      </footer>
+        {/* FOOTER */}
+        <footer className="py-8 border-t border-white/5 text-center">
+          <p className="text-zinc-600 text-sm font-mono">
+            Built with 🖤 by <a href="https://github.com/PratikRai0101" className="text-zinc-400 hover:text-white transition-colors">Pratik Rai</a>. Open source under the MIT License.
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }
