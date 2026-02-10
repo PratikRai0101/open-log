@@ -52,7 +52,7 @@ Writing changelogs is a chore. Developers often resort to dumping raw, unreadabl
 
 ### AI Generation
 
-* **Multi-Model Support**: Choose between Google Gemini (Streaming), Groq (Llama 3.3 for speed), and Moonshot Kimi2 (High Quality).
+* **Multi-Model Support (currently Groq only)**: Groq (Llama 3.3) is the default and recommended model. Gemini and Kimi integrations are temporarily disabled; we'll re-enable them when their APIs are configured.
 * **Real-time Streaming**: Watch your release notes generate live with a custom streaming UI.
 * **Custom Tones (Vibe Check)**: Generate notes in Professional, Startup Hype, Pirate, or Minimalist tones.
 
@@ -94,12 +94,10 @@ CLERK_SECRET_KEY=your_secret_key
 
 GITHUB_ACCESS_TOKEN=your_github_personal_access_token
 
-# AI Providers (You only need the ones you plan to use)
+# AI Providers (currently only GROQ required)
 
 
-GOOGLE_API_KEY=your_gemini_api_key
 GROQ_API_KEY=your_groq_api_key
-MOONSHOT_API_KEY=your_moonshot_api_key
 ```
 ### Build from source
 

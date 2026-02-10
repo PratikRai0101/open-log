@@ -12,15 +12,15 @@ interface ModelOption {
 }
 
 const MODELS: ModelOption[] = [
+  /*
+  // Gemini commented out for now - keep here for easy re-enable later
   {
     id: "gemini",
     name: "Google Gemini",
     // Gemini is lower-latency streaming but may produce lower quality
     badge: "Streaming (experimental)",
-    // use external jsdelivr CDN icons so dropdown can load them remotely
     iconUrl: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/google-gemini.svg",
     icon: (
-      // Star-like Gemini glyph
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
         <path d="M12 2l2.2 4.6L19 8l-4.6 2.2L12 15l-2.4-4.8L5 8l4.8-1.4L12 2z" fill="url(#g)" />
         <defs>
@@ -32,6 +32,7 @@ const MODELS: ModelOption[] = [
       </svg>
     ),
   },
+  */
   {
     id: "llama-3.3-70b-versatile",
     name: "Groq (Llama 3.3)",
@@ -45,7 +46,7 @@ const MODELS: ModelOption[] = [
       </svg>
     ),
   },
-  // Kimi2 option temporarily removed
+  // Kimi2 option intentionally commented out / removed for now
 ];
 
 interface ModelSelectorProps {

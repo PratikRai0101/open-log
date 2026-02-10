@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+// Temporarily disable Gemini server path: keep imports but comment out usage where practical.
 import { genAI, DEFAULT_MODEL, DEFAULT_CHUNK_SIZE, listModels, resolveModel } from "../../../lib/gemini";
 import { generateChangelog, AIModel } from "@/lib/ai";
 import { groupCommitsByType, formatCommitLine, chunkArray } from "../../../lib/commitUtils";
@@ -127,20 +128,11 @@ ${chunkLines.join("\n")}
       return outSections.join("\n\n");
     }
 
-    // If using the Gemini path (Google) resolve a usable model name for the
-    // configured API key. This will fall back to DEFAULT_MODEL if listing
-    // fails or the configured model isn't available.
-    const useGemini = !model || model === 'gemini';
+    // Gem in i path: temporarily disabled. We default to Groq path unless the
+    // explicit model is provided. If in future we re-enable Gemini, we can
+    // restore the resolveModel logic above.
+    const useGemini = false;
     let geminiModel = DEFAULT_MODEL;
-    if (useGemini) {
-      try {
-        geminiModel = await resolveModel();
-        if (!geminiModel) geminiModel = DEFAULT_MODEL;
-      } catch (err) {
-        console.warn("Could not resolve Gemini model; using DEFAULT_MODEL:", err);
-        geminiModel = DEFAULT_MODEL;
-      }
-    }
 
     // Create a combined ReadableStream that sequentially streams each chunk's
     // generated text.

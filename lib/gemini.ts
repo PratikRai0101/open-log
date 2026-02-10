@@ -1,11 +1,14 @@
 import "server-only";
-import { GoogleGenAI } from "@google/genai";
+// Gemini client temporarily disabled. We keep the helper around so we can
+// easily re-enable Gemini in the future, but avoid initializing the external
+// client to prevent runtime errors when GOOGLE_API_KEY is not present.
+// import { GoogleGenAI } from "@google/genai";
 
 // Ensure API key is present
 const apiKey = process.env.GOOGLE_API_KEY;
-if (!apiKey) console.error("Missing GOOGLE_API_KEY in environment variables");
+if (!apiKey) console.info("GOOGLE_API_KEY not set — Gemini disabled (using Groq only)");
 
-export const genAI = new GoogleGenAI({ apiKey: apiKey || "" });
+export const genAI: any = null; // placeholder while Gemini is disabled
 
 // Helper: List models via REST endpoint (still useful for debugging)
 export async function listModels() {
