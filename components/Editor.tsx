@@ -32,6 +32,28 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     '.blocknote-editor'
   ];
 
+  // Remove stray bullet/glyph characters that can appear inside markdown list
+  // items (e.g. "- • Fix bug" or "• Some item") while preserving
+  // the markdown list markers ("- ", "* ", "1. "). This prevents
+  // double visible bullets when BlockNote renders its own marker.
+  const sanitizeMarkdownLeadingBullets = (md: string) => {
+    if (!md) return md;
+    const bullets = "\u2022\u25E6\u2219\u00B7\u2023\u00B0\u25CF\u2024\u00B7•·◦○∙";
+    // Build a character class for the regex from the bullets string (escape if needed)
+    const bulletClass = `[${bullets.replace(/[-\\\]\\^]/g, "\\$&")}]+`;
+    const lines = md.split('\n');
+    return lines.map((line) => {
+      // If there's a markdown list marker (unordered or ordered), remove any
+      // bullet glyphs that follow it (e.g. "- • item" -> "- item").
+      let out = line.replace(new RegExp(`^(\\s*([-*+]\\s+))(?:${bulletClass}\\s*)+`), '$1');
+      // Ordered lists like "1. • item"
+      out = out.replace(new RegExp(`^(\\s*\\d+\\.\\s+)(?:${bulletClass}\\s*)+`), '$1');
+      // If the line starts with a bullet glyph and no markdown marker, strip it.
+      out = out.replace(new RegExp(`^\\s*(?:${bulletClass}\\s*)+`), '');
+      return out;
+    }).join('\n');
+  };
+
   // Helper to set contentEditable on matching elements within root or document
   const setContentEditableAll = (editableFlag: boolean) => {
     try {
@@ -84,9 +106,12 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
           // Suppress emitting onChange while we programmatically replace blocks to avoid
           // creating an update loop between parent -> prop -> replace -> parent
           suppressOnChangeRef.current = true;
-          const blocks = await (editor as any).tryParseMarkdownToBlocks(initialMarkdown);
+          // Sanitize incoming markdown to strip stray bullet glyphs that may be
+          // embedded in lines (these can produce duplicate visual markers).
+          const sanitized = sanitizeMarkdownLeadingBullets(initialMarkdown);
+          const blocks = await (editor as any).tryParseMarkdownToBlocks(sanitized);
           await (editor as any).replaceBlocks((editor as any).document, blocks);
-          lastPushedRef.current = initialMarkdown;
+          lastPushedRef.current = sanitized;
           suppressOnChangeRef.current = false;
         }
       } catch (e) {

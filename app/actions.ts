@@ -1,5 +1,7 @@
 "use server";
 import { auth, createClerkClient } from "@clerk/nextjs/server";
+import { generateChangelog, AIModel } from "@/lib/ai";
+import { getCommits } from "@/lib/github";
 
 export async function publishRelease(
   repoFullName: string,
@@ -51,5 +53,24 @@ export async function publishRelease(
   } catch (err) {
     console.error("Error creating GitHub release:", err);
     return { success: false, error: "Failed to publish release" };
+  }
+}
+
+// Create changelog using selected AI model
+export async function createChangelog(repoFullName: string, model: AIModel) {
+  // 1. Fetch commits
+  const commits = await getCommits(repoFullName);
+  if (!commits || commits.length === 0) {
+    return { success: false, error: "No commits found in this repository." };
+  }
+
+  const messages = commits.map((c) => c.message || "");
+
+  try {
+    const markdown = await generateChangelog(messages, model, repoFullName);
+    return { success: true, data: markdown };
+  } catch (err) {
+    console.error("createChangelog error:", err);
+    return { success: false, error: "AI generation failed." };
   }
 }

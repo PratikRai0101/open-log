@@ -12,6 +12,7 @@ import {
   RotateCcw,
   FileText,
   ChevronLeft,
+  ArrowLeft,
   PenLine,
   Eye,
   Lock,
@@ -20,6 +21,8 @@ import {
   User,
   Calendar,
 } from "lucide-react";
+// Clerk UserButton for real profile avatar
+import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { publishRelease } from "@/app/actions";
@@ -58,9 +61,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   const editorRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("ALL");
-  const [editingVersion, setEditingVersion] = useState(false);
-  const [versionDraft, setVersionDraft] = useState(versionTag);
-  const versionInputRef = useRef<HTMLInputElement | null>(null);
+  const [copied, setCopied] = useState(false);
+  // versionTag is editable inline
 
   const filteredCommits = initialCommits.filter((c) => {
     const q = searchQuery.trim().toLowerCase();
@@ -78,7 +80,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
   // Load autosaved draft on mount (if any)
   useEffect(() => {
-    setVersionDraft(versionTag);
     try {
       const key = `openlog:changelog:${repoName}`;
       if (typeof window !== "undefined") {
@@ -338,12 +339,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     }
   }
 
-  // Focus version input when entering edit mode
-  useEffect(() => {
-    if (editingVersion && versionInputRef.current) {
-      try { versionInputRef.current.focus(); versionInputRef.current.select(); } catch (e) {}
-    }
-  }, [editingVersion]);
+  // versionTag is editable inline; no edit button necessary
 
   // Robust copy helper: try editorRef.getMarkdown(), fallback to generated, then savedDraft.
   async function handleCopy() {
@@ -366,7 +362,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       // Primary: Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
+        setCopied(true);
         toast.success("Copied release body to clipboard");
+        setTimeout(() => setCopied(false), 1800);
         return;
       }
 
@@ -380,8 +378,11 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       ta.select();
       const ok = document.execCommand("copy");
       document.body.removeChild(ta);
-      if (ok) toast.success("Copied release body to clipboard");
-      else toast.error("Copy failed");
+      if (ok) {
+        setCopied(true);
+        toast.success("Copied release body to clipboard");
+        setTimeout(() => setCopied(false), 1800);
+      } else toast.error("Copy failed");
     } catch (e) {
       console.error(e);
       toast.error("Copy failed");
@@ -389,41 +390,43 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden">
       {/* GLOBAL HEADER */}
-      <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20">
-         <div className="flex items-center gap-3">
-            <span className="font-bold text-zinc-100 tracking-tight">ShipLog</span>
-            <span className="text-zinc-700">/</span>
-            <span className="text-sm text-zinc-400 font-mono">{repoName}</span>
-         </div>
+      <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
+          <div className="flex items-center gap-3">
+             <Link href="/" className="text-zinc-500 hover:text-zinc-300 transition-colors"><ArrowLeft size={16} /></Link>
+             <span className="font-bold text-zinc-100 tracking-tight">ShipLog</span>
+             <span className="text-zinc-700">/</span>
+             <span className="text-sm text-zinc-400 font-mono truncate max-w-[200px]">{repoName}</span>
+          </div>
          
          <div className="flex bg-[#0A0A0B] p-1 rounded-lg border border-white/5">
             <button onClick={() => setViewMode("edit")} className={`px-4 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'edit' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Write</button>
             <button onClick={() => setViewMode("preview")} className={`px-4 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'preview' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Preview</button>
          </div>
 
-         <div className="flex items-center gap-3">
-            {editingVersion ? (
-              <div className="flex items-center gap-2">
-                <input ref={versionInputRef} value={versionDraft} onChange={e => setVersionDraft(e.target.value)} className="bg-[#0B0B0C] border border-white/10 px-3 py-1 rounded text-sm text-white focus:outline-none" />
-                <button onClick={() => { setVersionTag(versionDraft); setEditingVersion(false); toast.success('Version updated'); }} className="px-3 py-1 bg-[#0A0A0B] border border-white/10 rounded text-sm text-emerald-300">Save</button>
-                <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(false); }} className="px-3 py-1 bg-transparent border border-white/5 rounded text-sm text-zinc-400">Cancel</button>
-              </div>
-            ) : (
-              <>
-                <div className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-mono text-zinc-400">{versionTag || "v0.0.0"}</div>
-                <div className="size-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs text-zinc-400 border border-white/5"><User size={14}/></div>
-                <button onClick={() => { setVersionDraft(versionTag); setEditingVersion(true); }} className="ml-3 text-xs text-zinc-400 border border-white/5 px-2 py-1 rounded">Edit</button>
-              </>
-            )}
-         </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5 rounded text-[10px] font-mono text-zinc-400">
+              <span className="text-[10px] text-zinc-500 font-mono">tag:</span>
+              <input
+                type="text"
+                value={versionTag}
+                onChange={(e) => setVersionTag(e.target.value)}
+                className="bg-transparent border-none text-[10px] font-mono text-zinc-300 w-20 focus:ring-0 p-0 placeholder-zinc-600"
+                placeholder="v0.0.0"
+              />
+            </div>
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{ elements: { avatarBox: "size-8 border border-white/10" } }}
+            />
+          </div>
       </header>
 
       {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative z-10">
         {/* SIDEBAR: Full Height, No "Card" Look */}
-        <aside className="w-[400px] flex flex-col border-r border-white/5 bg-[#050505]">
+         <aside className="w-[360px] flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
            {/* Search */}
            <div className="p-4 border-b border-white/5 space-y-3">
               <div className="relative">
@@ -443,7 +446,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
            </div>
 
            {/* Minimalist Commit List */}
-           <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
               {filteredCommits.map(c => {
                 const isSelected = selected.has(c.hash);
                 return (
@@ -462,48 +465,62 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         </aside>
 
         {/* EDITOR AREA */}
-        <main className="flex-1 flex flex-col bg-[#050505] relative">
+         <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0">
            {/* Toolbar */}
-           <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505]">
-              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
-              <div className="flex items-center gap-2">
-                 <button onClick={handleGenerate} className="flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded hover:bg-white/5"><RotateCcw size={12}/> Regen</button>
-                 <button onClick={handlePublish} className="flex items-center gap-2 text-xs font-bold text-[#FF4F4F] hover:text-red-400 transition-colors px-3 py-1.5 rounded hover:bg-[#FF4F4F]/10"><Rocket size={12}/> Publish</button>
-              </div>
-           </div>
+            <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
+               <div className="flex items-center gap-2">
+                 <PenLine size={12} className="text-zinc-600"/>
+                 <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">release_notes.md</span>
+               </div>
+               <div className="flex items-center gap-2">
+                  {/* Copy Button */}
+                  <button onClick={handleCopy} disabled={!generated} className="flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded hover:bg-white/5 disabled:opacity-50">
+                     {copied ? <Check size={12} className="text-emerald-500"/> : <Copy size={12}/>} Copy
+                  </button>
+
+                  {/* Regenerate Button */}
+                  <button onClick={handleGenerate} disabled={isGenerating || selected.size === 0} className="flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded hover:bg-white/5 disabled:opacity-50">
+                     <RotateCcw size={12} className={isGenerating ? "animate-spin" : ""}/> Regenerate
+                  </button>
+
+                  {/* Publish Button (Red Brand Color) */}
+                  <button onClick={handlePublish} disabled={isGenerating || !generated} className="flex items-center gap-2 text-xs font-bold text-white bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 transition-all px-4 py-1.5 rounded shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:shadow-none ml-2">
+                     <Rocket size={12}/> Publish
+                  </button>
+               </div>
+            </div>
 
            {/* Editor Canvas */}
-           <div className="flex-1 overflow-hidden relative">
-              {generated ? (
-                 <div className="h-full flex flex-col px-12 pt-12">
-                 <h1 className="text-4xl font-bold text-zinc-100 mb-6">Release Notes <span className="release-version">{versionTag}</span></h1>
-                    <div className="flex-1 pb-20">
-                       <Editor 
-                         ref={editorRef}
-                         initialMarkdown={generated} 
-                         onChange={setGenerated} 
-                         editable={viewMode === 'edit'}
-                       />
-                    </div>
-                 </div>
-              ) : (
-                 <div className="absolute inset-0 flex items-center justify-center text-zinc-700 text-sm font-mono">Select commits to start</div>
-              )}
-           </div>
+            <div className="flex-1 overflow-hidden relative">
+               {generated ? (
+                  <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
+                     {/* Document Title Header */}
+                     <div className="shrink-0 mb-8 pb-4 border-b border-white/5">
+                        <h1 className="text-3xl font-bold text-zinc-100 mb-2 tracking-tight">Release Notes <span className="text-[#FF4F4F]">{versionTag}</span></h1>
+                        <div className="flex items-center gap-4 text-xs text-zinc-500 font-mono">
+                           <span className="flex items-center gap-1"><Calendar size={12}/> {new Date().toLocaleDateString()}</span>
+                        </div>
+                     </div>
+                     {/* The Editor */}
+                     <div className="flex-1 relative min-h-0 pb-10">
+                        <Editor 
+                          ref={editorRef}
+                          initialMarkdown={generated} 
+                          onChange={setGenerated} 
+                          editable={viewMode === 'edit'}
+                        />
+                     </div>
+                  </div>
+               ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 select-none opacity-50">
+                     <Sparkles size={48} className="mb-4 text-zinc-800"/>
+                     <p className="text-sm font-mono uppercase tracking-widest">Select commits to generate</p>
+                  </div>
+               )}
+            </div>
         </main>
       </div>
-
-      {/* FOOTER */}
-      <footer className="h-9 border-t border-white/5 bg-[#050505] flex items-center justify-between px-6 shrink-0 z-20">
-         <div className="flex items-center gap-5 text-[10px] text-zinc-600 font-mono">
-           <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500 min-w-[20px] text-center">J</kbd> <kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500 min-w-[20px] text-center">K</kbd> Navigate</span>
-           <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">SPACE</kbd> Select</span>
-         </div>
-         <div className="flex items-center gap-4 text-[10px] text-zinc-600 font-mono">
-           <span className="flex items-center gap-1.5"><kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">CMD</kbd> + <kbd className="bg-white/5 border border-white/10 px-1.5 rounded text-zinc-500">ENTER</kbd> Generate</span>
-           <span className="flex items-center gap-2 text-zinc-700 ml-4 opacity-50"><Sparkles size={10} className="text-[#FF4F4F]"/> Powered by Gemini 1.5</span>
-         </div>
-      </footer>
+      {/* FOOTER REMOVED */}
     </div>
   );
 }
