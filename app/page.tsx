@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Github,
+  PlayCircle,
   Sparkles,
   GitCommit,
   PenTool,
@@ -14,8 +15,6 @@ import {
 } from "lucide-react";
 import HeroProductShot from "../components/HeroProductShot";
 import dynamic from "next/dynamic";
-import PlayDemoButton from "../components/PlayDemoButton";
-import { OpenLogIcon } from "../components/OpenLogIcon";
 import { OpenLogLogo } from "../components/OpenLogLogo";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -28,45 +27,22 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white overflow-x-hidden">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#000000]/60 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Replace simple text logo with the branded logo SVG */}
-              <a href="/" className="flex items-center gap-3">
-                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
-                  <path d="M14 6H10C7.79 6 6 7.79 6 10V22C6 24.21 7.79 26 10 26H14" stroke="#71717A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18V6Z" fill="#FF4D4D" fillOpacity="0.2" />
-                  <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18" stroke="#FF4D4D" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-white font-semibold tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>OpenLog</span>
-              </a>
-            </div>
-          <div className="flex items-center gap-4">
-            {/* Intentionally empty to keep header spacing — main nav is centered in the pill */}
-            <div className="h-8" />
-          </div>
-        </div>
-        {/* Centered pill navigation */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 top-3 pointer-events-none flex justify-center w-full">
-          <div className="relative pointer-events-auto inline-flex items-center justify-center gap-6 px-5 py-2 rounded-full bg-[#000000]/60 border border-white/6 backdrop-blur-sm shadow-md text-sm text-zinc-300">
-            <div className="hidden sm:flex items-center">
-              <OpenLogLogo className="text-sm" />
-            </div>
-            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-3 py-1 rounded-full bg-[#070707]/80 border border-white/8 text-sm text-zinc-200 shadow-sm">
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
-              <div className="flex flex-col leading-tight text-xs">
-                <span className="opacity-80">Star</span>
-                <span className="font-medium">on GitHub</span>
-              </div>
-              <div className="ml-2 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
+      {/* Header: Full-width fixed navbar per brand guidelines */}
+      <header className="fixed top-0 w-full h-16 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center">
+            <a href="/" aria-label="OpenLog home" className="flex items-center">
+              <OpenLogLogo />
             </a>
-            <nav className="flex items-center gap-4 text-zinc-300">
-              <a className="hover:text-white">Features</a>
-              <a className="hover:text-white">Changelog</a>
-              <a className="hover:text-white">Docs</a>
-            </nav>
-            <Link href="/sign-in" className="px-3 py-1 rounded-md bg-white/3 text-sm">Login</Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm text-zinc-200 hover:text-white">
+              <span className="text-amber-400">★</span>
+              <span className="font-medium">Star on GitHub</span>
+            </a>
+
+            <Link href="/sign-in" className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-sm text-white">Login</Link>
           </div>
         </div>
       </header>
@@ -82,24 +58,31 @@ export default async function LandingPage() {
               <span className="flex items-center gap-2">Build with Love <span aria-hidden className="text-rose-400 heart-animate">❤️</span></span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6 flex flex-col items-center">
-              <span className="flex items-center gap-3">
-                <OpenLogIcon className="w-10 h-10" />
-                Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4F4F] to-rose-400">OpenLog.</span>
-              </span>
-              <span className="mt-2">The end of manual release notes.</span>
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif', letterSpacing: '-0.02em' }}>
+              Meet OpenLog<span className="text-[#FF4D4D]">.</span> <br className="hidden md:block"/> 
+              The end of manual release notes.
             </h1>
 
             <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed items-center justify-center flex mx-auto">
               Stop copy-pasting raw commits. Connect your repository, select your updates, and let AI generate beautifully formatted changelogs in seconds. Built for power users.
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-4">
-              <div className="flex items-center gap-4">
-                <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Try it out now <ArrowRight size={16} /></Link>
-                <PlayDemoButton />
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* Primary CTA */}
+                <Link href="/sign-up" className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#FF4D4D] hover:bg-[#FF4D4D]/90 text-white font-bold shadow-lg shadow-red-500/20 transition-all hover:scale-105">
+                  Try it out now <ArrowRight size={16} />
+                </Link>
+
+                {/* Play Demo CTA */}
+                <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold transition-all">
+                  <PlayCircle size={18} /> Play demo
+                </button>
               </div>
-              <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 text-white/90 font-medium">View GitHub Repo</a>
+              {/* Subtle GitHub CTA underneath */}
+              <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-transparent hover:border-white/10 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 text-sm font-medium transition-all mt-2">
+                <Github size={16} /> View GitHub Repo
+              </a>
             </div>
 
             <div className="mt-14">
