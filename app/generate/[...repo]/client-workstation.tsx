@@ -77,14 +77,29 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   function onWheelForward(e: React.WheelEvent<HTMLDivElement>) {
     try {
       const target = e.target as HTMLElement | null;
+      // Walk up from the target to find the nearest scrollable ancestor.
+      const findScrollable = (start: HTMLElement | null) => {
+        let cur = start;
+        while (cur && cur !== document.documentElement) {
+          try {
+            const style = getComputedStyle(cur);
+            const overflowY = style.overflowY;
+            if ((overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && cur.scrollHeight > cur.clientHeight) return cur;
+          } catch (e) {
+            // ignore
+          }
+          cur = cur.parentElement;
+        }
+        return null;
+      };
+
       let el: HTMLElement | null = null;
-      if (target) el = target.closest('.custom-scrollbar') as HTMLElement | null;
+      if (target) el = findScrollable(target);
       if (!el) {
         const at = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-        if (at) el = at.closest('.custom-scrollbar') as HTMLElement | null;
+        if (at) el = findScrollable(at) || at.closest('.custom-scrollbar') as HTMLElement | null;
       }
       if (el) {
-        // Forward scroll delta and prevent default so the document doesn't chew it.
         el.scrollTop += e.deltaY;
         e.preventDefault();
       }
@@ -102,18 +117,34 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   useEffect(() => {
     function wheelCapture(ev: WheelEvent) {
       try {
-        // If the event was already handled by React's onWheelForward, skip.
-        // We'll still try to forward to the nearest custom-scrollbar.
         const x = ev.clientX;
         const y = ev.clientY;
         const at = document.elementFromPoint(x, y) as HTMLElement | null;
         if (!at) return;
-        const el = at.closest('.custom-scrollbar') as HTMLElement | null;
-        if (!el) return;
-        // Forward the delta; let the browser handle clamping.
-        el.scrollTop += ev.deltaY;
-        ev.preventDefault();
-        ev.stopPropagation();
+        // Prefer the nearest ancestor that is actually scrollable.
+        let cur: HTMLElement | null = at;
+        while (cur && cur !== document.documentElement) {
+          try {
+            const style = getComputedStyle(cur);
+            const overflowY = style.overflowY;
+            if ((overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && cur.scrollHeight > cur.clientHeight) {
+              cur.scrollTop += ev.deltaY;
+              ev.preventDefault();
+              ev.stopPropagation();
+              return;
+            }
+          } catch (e) {
+            // ignore
+          }
+          cur = cur.parentElement;
+        }
+        // fallback: nearest .custom-scrollbar
+        const fallback = at.closest('.custom-scrollbar') as HTMLElement | null;
+        if (fallback && fallback.scrollHeight > fallback.clientHeight) {
+          fallback.scrollTop += ev.deltaY;
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
       } catch (err) {
         // ignore
       }
