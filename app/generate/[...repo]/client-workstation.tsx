@@ -74,6 +74,20 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   // overflow containers when html/body overflow is hidden. Intercept wheel on
   // the outer container and forward the delta to the nearest `.custom-scrollbar`
   // under the pointer so inner panes still scroll naturally.
+  // Track last pointer position so touchpad wheel events that don't move the
+  // cursor still have a sensible reference point for finding the nearest
+  // scrollable container.
+  const lastPointerRef = React.useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+
+  React.useEffect(() => {
+    function onPointerMove(ev: PointerEvent) {
+      lastPointerRef.current.x = ev.clientX;
+      lastPointerRef.current.y = ev.clientY;
+    }
+    window.addEventListener('pointermove', onPointerMove, { capture: true });
+    return () => window.removeEventListener('pointermove', onPointerMove, { capture: true });
+  }, []);
+
   function onWheelForward(e: React.WheelEvent<HTMLDivElement>) {
     try {
       const target = e.target as HTMLElement | null;
@@ -94,10 +108,20 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       };
 
       let el: HTMLElement | null = null;
+      // Prefer the event target, then the element at the wheel point. If the
+      // wheel event doesn't carry a reliable clientX/Y (touchpad gestures may
+      // not move the pointer), fall back to the last known pointer position
+      // or the viewport center.
       if (target) el = findScrollable(target);
+      const clientX = (e.nativeEvent && (e.nativeEvent as any).clientX) || lastPointerRef.current.x || Math.round(window.innerWidth / 2);
+      const clientY = (e.nativeEvent && (e.nativeEvent as any).clientY) || lastPointerRef.current.y || Math.round(window.innerHeight / 2);
       if (!el) {
-        const at = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+        const at = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
         if (at) el = findScrollable(at) || at.closest('.custom-scrollbar') as HTMLElement | null;
+      }
+      // If still not found, check activeElement for a scrollable ancestor (user may have focused editor)
+      if (!el && document.activeElement && document.activeElement instanceof HTMLElement) {
+        el = findScrollable(document.activeElement as HTMLElement);
       }
       if (el) {
         el.scrollTop += e.deltaY;
@@ -117,8 +141,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   useEffect(() => {
     function wheelCapture(ev: WheelEvent) {
       try {
-        const x = ev.clientX;
-        const y = ev.clientY;
+        // Use event coordinates if present, otherwise fall back to the last
+        // pointer position or viewport center (handles touchpad gestures).
+        const x = ev.clientX || lastPointerRef.current.x || Math.round(window.innerWidth / 2);
+        const y = ev.clientY || lastPointerRef.current.y || Math.round(window.innerHeight / 2);
         const at = document.elementFromPoint(x, y) as HTMLElement | null;
         if (!at) return;
         // Prefer the nearest ancestor that is actually scrollable.
