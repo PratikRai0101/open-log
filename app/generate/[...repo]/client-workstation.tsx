@@ -565,7 +565,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   }
 
   return (
-    <div className="bg-[#050505] text-zinc-300 font-sans min-h-screen w-full">
+    // Prevent document/root scrolling on this workstation page. Commit list and
+    // editor panes are independent native scroll surfaces; lock the outer
+    // container to avoid any page-level scroll chaining.
+    <div className="bg-[#050505] text-zinc-300 font-sans h-screen w-full overflow-hidden">
       {/* GLOBAL HEADER */}
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
