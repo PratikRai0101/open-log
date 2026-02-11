@@ -11,6 +11,8 @@ import {
   Code,
   GitPullRequest,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+const HeroProductShot = dynamic(() => import("../components/HeroProductShot"), { ssr: false });
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -56,68 +58,20 @@ export default async function LandingPage() {
             </p>
 
             <div className="mt-8 flex items-center justify-center gap-4">
-              <Link href="/generate" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Start Generating (Free) <ArrowRight size={16} /></Link>
+              <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Start Generating (Free) <ArrowRight size={16} /></Link>
               <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 text-white/90 font-medium">View GitHub Repo</a>
             </div>
 
-            {/* Product shot: left = commit list, right = release notes, center indicator */}
             <div className="mt-14">
-              <div className="relative mx-auto max-w-6xl w-full rounded-2xl border border-white/6 bg-gradient-to-b from-black/40 to-transparent p-6 backdrop-blur-md shadow-2xl overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left: faux commit list */}
-                  <div className="rounded-xl border border-white/5 p-6 bg-[#050505]">
-                    <div className="flex items-center gap-2 mb-4 text-xs font-mono text-zinc-500">
-                      <span className="px-2 py-1 rounded bg-white/3">git_log --pretty=oneline</span>
-                      <span className="ml-auto text-zinc-400">master</span>
-                    </div>
-                    <div className="space-y-2 text-sm font-mono text-zinc-400">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 text-xs text-rose-400">a7f23c1</div>
-                        <div className="flex-1">feat: fixed the bug in the auth hook and some minor stuff</div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 text-xs text-emerald-400">b1e9a2b</div>
-                        <div className="flex-1">chore: update docs for readme and contrib</div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 text-xs text-zinc-500">2c8b1a9</div>
-                        <div className="flex-1">fix: small css tweak in navigation bar dropdown</div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 text-xs text-zinc-500">8c5a1f</div>
-                        <div className="flex-1">refactor: clean up logic in session middleware</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: release notes preview */}
-                  <div className="rounded-xl border border-white/5 p-6 bg-[#050505] flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="text-sm text-zinc-400">v2.4.0 Release Notes</div>
-                          <h3 className="text-xl font-bold text-white mt-1">Security enhancements & refined UX</h3>
-                        </div>
-                        <div className="text-xs px-3 py-1 rounded-full bg-rose-600 text-white">Stable</div>
-                      </div>
-                      <ul className="space-y-3 text-sm text-zinc-400">
-                        <li>Hardened the AuthHook architecture to prevent race conditions during session hydration.</li>
-                        <li>Visual optimization of global navigation components and improved dropdown accessibility.</li>
-                        <li>Migration of core build pipeline to Vite 5 for faster cold starts.</li>
-                      </ul>
-                    </div>
-                    <div className="mt-6 text-xs text-zinc-500">Released • 2 days ago</div>
-                  </div>
-                </div>
-
-                {/* Center lightning indicator */}
-                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-rose-500/40 to-rose-600/30 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-xl">
-                    <div className="w-12 h-12 rounded-full bg-black/50 border border-rose-400/30 flex items-center justify-center">
-                      <Zap className="text-rose-400" size={20} />
-                    </div>
-                  </div>
-                </div>
+              {/* HeroProductShot handles the fancy product shot with parallax + screenshot overlay */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <div>
+                <script type="module" />
+              </div>
+              <div className="mt-6">
+                {/* client component */}
+                {/* @ts-ignore */}
+                <HeroProductShot imageSrc="/assets/product-screenshot.png" />
               </div>
             </div>
           </div>
