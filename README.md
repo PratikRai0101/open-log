@@ -15,7 +15,7 @@
 
 ---
 
-![openlog-hero](/public/hero-screenshot.png)
+![openlog-hero](/public/OpenLog-Demo.mp)
 
 > OpenLog automates changelog writing. Select commits, generate an AI draft (Groq), polish in a rich BlockNote workstation, and publish to GitHub Releases.
 
