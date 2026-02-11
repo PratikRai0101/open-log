@@ -93,6 +93,36 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     }
   }
 
+  // Native wheel capture: some browsers (Brave) or custom compositors may not
+  // dispatch React's synthetic onWheel in the situations we need. Install a
+  // native capture listener (passive:false) to reliably intercept wheel events
+  // and forward them to the nearest `.custom-scrollbar` element under the
+  // pointer. This preserves momentum scrolling for touchpads and normal
+  // mouse wheels.
+  useEffect(() => {
+    function wheelCapture(ev: WheelEvent) {
+      try {
+        // If the event was already handled by React's onWheelForward, skip.
+        // We'll still try to forward to the nearest custom-scrollbar.
+        const x = ev.clientX;
+        const y = ev.clientY;
+        const at = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (!at) return;
+        const el = at.closest('.custom-scrollbar') as HTMLElement | null;
+        if (!el) return;
+        // Forward the delta; let the browser handle clamping.
+        el.scrollTop += ev.deltaY;
+        ev.preventDefault();
+        ev.stopPropagation();
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    window.addEventListener('wheel', wheelCapture, { passive: false, capture: true });
+    return () => window.removeEventListener('wheel', wheelCapture as EventListener, { capture: true } as any);
+  }, []);
+
   // State
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string>(""); 
