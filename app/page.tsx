@@ -14,8 +14,7 @@ import {
   Star,
 } from "lucide-react";
 import HeroProductShot from "../components/HeroProductShot";
-import dynamic from "next/dynamic";
-const PlayDemoButton = dynamic(() => import("../components/PlayDemoButton"), { ssr: false });
+import PlayDemoClient from "../components/PlayDemoClient";
 import { OpenLogLogo } from "../components/OpenLogLogo";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -108,8 +107,8 @@ export default async function LandingPage() {
                   Try it out now <ArrowRight size={16} />
                 </Link>
 
-                {/* Play Demo CTA */}
-                <PlayDemoButton />
+                {/* Play Demo CTA (client) */}
+                <PlayDemoClient />
               </div>
               {/* Subtle GitHub CTA underneath */}
               <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/6 text-sm font-medium transition-all mt-2">
@@ -209,7 +208,7 @@ export default async function LandingPage() {
           <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-zinc-500 text-sm">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-md bg-white/5 border border-white/10 flex items-center justify-center">OL</div>
-              <div>© {new Date().getFullYear()} OpenLog • Liquid Tools Inc.</div>
+              <div>© {new Date().getFullYear()} OpenLog • A product by Pratik Rai 🩶.</div>
             </div>
             <div className="flex items-center gap-6">
               <a href="/privacy" className="hover:text-white">Privacy</a>
