@@ -21,9 +21,9 @@ export default function PlayDemoButton() {
       <VideoModal
         open={open}
         onClose={() => setOpen(false)}
-        poster="/demo-poster.jpg"
+        poster="/hero-screenshot.png"
         title="OpenLog demo"
-        sources={[{ src: "/demo.webm", type: "video/webm" }, { src: "/demo.mp4", type: "video/mp4" }]}
+        sources={[{ src: "/OpenLog-Demo.mp4", type: "video/mp4" }]}
       />
     </>
   );
