@@ -59,7 +59,7 @@ export default async function LandingPage() {
             </div>
 
             <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif', letterSpacing: '-0.02em' }}>
-              <span className="block">Meet OpenLog<span className="text-[#FF4D4D]">.</span></span>
+              <span className="block text-zinc-400">Meet OpenLog<span className="text-[#FF4D4D]">.</span></span>
               <span className="block text-3xl md:text-5xl mt-2">The end of manual release notes.</span>
             </h1>
 
