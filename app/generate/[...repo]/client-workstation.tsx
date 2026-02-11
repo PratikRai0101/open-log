@@ -43,6 +43,33 @@ interface WorkstationProps {
 }
 
 export default function ClientWorkstation({ initialCommits, repoName }: WorkstationProps) {
+  // Lock document-level scrolling while this component is mounted. Some
+  // browsers (Brave) or compositor setups (Omarchy) still allow root scroll
+  // even if our outer container uses `overflow-hidden`. Explicitly set the
+  // html/body overflow and overscroll-behavior so the page cannot scroll and
+  // inner `.custom-scrollbar` surfaces remain interactive.
+  useEffect(() => {
+    try {
+      const html = document.documentElement;
+      const body = document.body;
+      const prevHtmlOverflow = html.style.overflow;
+      const prevBodyOverflow = body.style.overflow;
+      const prevHtmlOverscroll = html.style.overscrollBehavior;
+
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+
+      return () => {
+        html.style.overflow = prevHtmlOverflow || "";
+        body.style.overflow = prevBodyOverflow || "";
+        html.style.overscrollBehavior = prevHtmlOverscroll || "";
+      };
+    } catch (e) {
+      // noop - fail silently if DOM isn't available
+    }
+  }, []);
+
   // State
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string>(""); 
