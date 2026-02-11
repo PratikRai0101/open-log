@@ -16,6 +16,7 @@ import HeroProductShot from "../components/HeroProductShot";
 import dynamic from "next/dynamic";
 import PlayDemoButton from "../components/PlayDemoButton";
 import { OpenLogIcon } from "../components/OpenLogIcon";
+import { OpenLogLogo } from "../components/OpenLogLogo";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -49,6 +50,9 @@ export default async function LandingPage() {
         {/* Centered pill navigation */}
         <div className="absolute left-1/2 transform -translate-x-1/2 top-3 pointer-events-none flex justify-center w-full">
           <div className="relative pointer-events-auto inline-flex items-center justify-center gap-6 px-5 py-2 rounded-full bg-[#000000]/60 border border-white/6 backdrop-blur-sm shadow-md text-sm text-zinc-300">
+            <div className="hidden sm:flex items-center">
+              <OpenLogLogo className="text-sm" />
+            </div>
             <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-3 py-1 rounded-full bg-[#070707]/80 border border-white/8 text-sm text-zinc-200 shadow-sm">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
               <div className="flex flex-col leading-tight text-xs">
