@@ -69,7 +69,7 @@ export default async function LandingPage() {
           <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/10 text-xs text-zinc-400 font-medium mb-6">
               <Sparkles size={14} className="text-[#FF4F4F]" />
-              <span>Build with Love ♥</span>
+              <span className="flex items-center gap-2">Build with Love <span aria-hidden className="text-rose-400">❤️</span></span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-tight max-w-5xl mx-auto">
