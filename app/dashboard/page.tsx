@@ -72,13 +72,14 @@ export default async function Dashboard() {
             Real-time Sync Active
           </div>
           
-          <div className="flex items-center justify-center mb-4">
-            <OpenLogLogo />
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <div className="size-10 flex items-center justify-center text-[#FF4F4F] bg-white/5 rounded-lg border border-white/5 shadow-[0_0_15px_rgba(255,79,79,0.2)] p-2">
+              <OpenLogIcon className="w-6 h-6" />
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-0 pb-2">
+              Open Log
+            </h1>
           </div>
-
-          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
-            Open Log
-          </h1>
         </div>
 
         {/* Search Bar */}
