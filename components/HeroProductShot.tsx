@@ -111,7 +111,7 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: P
         </div>
 
         {/* optional screenshot overlay (behind content) */}
-        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0 rounded-2xl" />
+        <img src={imageSrc} alt="Product screenshot" className="absolute left-1/2 transform -translate-x-1/2 bottom-0 w-[92%] h-auto max-h-[420px] object-cover opacity-100 pointer-events-none z-0 rounded-2xl shadow-2xl" />
       </div>
     </div>
   );

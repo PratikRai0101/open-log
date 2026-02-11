@@ -10,6 +10,7 @@ import {
   Zap,
   Code,
   GitPullRequest,
+  Star,
 } from "lucide-react";
 import HeroProductShot from "../components/HeroProductShot";
 import { auth } from "@clerk/nextjs/server";
@@ -20,7 +21,7 @@ export default async function LandingPage() {
   if (userId) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white">
+    <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white overflow-x-hidden">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#000000]/60 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -29,10 +30,27 @@ export default async function LandingPage() {
             <span className="text-white font-semibold tracking-tight">OpenLog</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-zinc-300">
-              <Github size={14} /> Star on GitHub
-            </a>
-            <Link href="/sign-in" className="text-sm font-medium text-zinc-200 px-3 py-1 rounded-md">Log in</Link>
+            {/* Intentionally empty to keep header spacing — main nav is centered in the pill */}
+            <div className="h-8" />
+          </div>
+        </div>
+        {/* Centered pill navigation */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 top-3 pointer-events-none w-full flex justify-center">
+          <div className="pointer-events-auto inline-flex items-center gap-6 px-5 py-2 rounded-full bg-[#000000]/60 border border-white/6 backdrop-blur-sm shadow-md text-sm text-zinc-300">
+            <div className="inline-flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-rose-500 block" />
+              <span className="text-white font-semibold">OpenLog</span>
+            </div>
+            <nav className="flex items-center gap-4 text-zinc-300">
+              <a className="hover:text-white">Features</a>
+              <a className="hover:text-white">Changelog</a>
+              <a className="hover:text-white">Docs</a>
+            </nav>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/6 border border-white/8">
+              <Star size={12} className="text-amber-400" />
+              <span className="text-xs font-medium">2.4k</span>
+            </div>
+            <Link href="/sign-in" className="ml-2 px-3 py-1 rounded-md bg-white/3 text-sm">Login</Link>
           </div>
         </div>
       </header>
@@ -58,8 +76,8 @@ export default async function LandingPage() {
               Connect your GitHub, select commits, and let AI generate beautifully formatted changelogs in seconds. Open-source and built for power users.
             </p>
 
-            <div className="mt-8 flex items-center justify-center gap-4">
-              <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Start Generating (Free) <ArrowRight size={16} /></Link>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4">
+              <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Try it out now <ArrowRight size={16} /></Link>
               <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 text-white/90 font-medium">View GitHub Repo</a>
             </div>
 

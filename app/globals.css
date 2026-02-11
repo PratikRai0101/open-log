@@ -4,7 +4,9 @@
    prevent page-level scroll while avoiding vw-based layout issues. */
 html, body, #__next {
   height: 100%;
-  overflow: hidden;
+  /* Allow native vertical scrolling while preventing horizontal overflow */
+  overflow-x: hidden;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
 }
