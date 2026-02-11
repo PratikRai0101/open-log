@@ -66,8 +66,8 @@ export default async function LandingPage() {
       </header>
 
       <main className="pt-24">
-        {/* inner scroll container so page-level scrolling is native while html/body stay overflow:hidden */}
-        <div className="custom-scrollbar max-h-[calc(100vh-4rem)] overflow-y-auto">
+        {/* Use native page scrolling to avoid nested scrollbars; keep custom scrollbar styles for visuals */}
+        <div className="custom-scrollbar">
         {/* HERO */}
         <section className="relative px-6 pt-12 pb-24">
           <div className="max-w-7xl mx-auto text-center">
