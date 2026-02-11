@@ -59,8 +59,8 @@ export default async function LandingPage() {
             </div>
 
             <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif', letterSpacing: '-0.02em' }}>
-              Meet OpenLog<span className="text-[#FF4D4D]">.</span> <br className="hidden md:block"/> 
-              The end of manual release notes.
+              <span className="block">Meet OpenLog<span className="text-[#FF4D4D]">.</span></span>
+              <span className="block text-3xl md:text-5xl mt-2">The end of manual release notes.</span>
             </h1>
 
             <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed items-center justify-center flex mx-auto">
@@ -70,7 +70,7 @@ export default async function LandingPage() {
             <div className="flex flex-col items-center gap-4">
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 {/* Primary CTA */}
-                <Link href="/sign-up" className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#FF4D4D] hover:bg-[#FF4D4D]/90 text-white font-bold shadow-lg shadow-red-500/20 transition-all hover:scale-105">
+                <Link href="/sign-in" className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#FF4D4D] hover:bg-[#FF4D4D]/90 text-white font-bold shadow-lg shadow-red-500/20 transition-all hover:scale-105">
                   Try it out now <ArrowRight size={16} />
                 </Link>
 
@@ -80,7 +80,7 @@ export default async function LandingPage() {
                 </button>
               </div>
               {/* Subtle GitHub CTA underneath */}
-              <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-transparent hover:border-white/10 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 text-sm font-medium transition-all mt-2">
+              <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/6 text-sm font-medium transition-all mt-2">
                 <Github size={16} /> View GitHub Repo
               </a>
             </div>
