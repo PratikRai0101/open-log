@@ -11,8 +11,7 @@ import {
   Code,
   GitPullRequest,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-const HeroProductShot = dynamic(() => import("../components/HeroProductShot"), { ssr: false });
+import HeroProductShot from "../components/HeroProductShot";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
