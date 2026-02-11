@@ -589,6 +589,35 @@ body{
 /* Firefox compatible sizing & color */
 .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
 
+/*
+  Hide native scrollbars on all elements except the document root and
+  explicitly opted-in containers that use the `.custom-scrollbar` class.
+  This prevents nested browser scrollbars from appearing while preserving
+  scroll behavior. We re-enable thin/custom scrollbars for elements with
+  the `.custom-scrollbar` class and for the document root.
+*/
+
+/* Firefox: hide scrollbars on all elements except root and custom-scrollbar */
+*:not(html):not(body):not(#__next):not(.custom-scrollbar) {
+  scrollbar-width: none !important;
+}
+
+/* WebKit: hide scrollbars on all elements except root and custom-scrollbar */
+*:not(html):not(body):not(#__next):not(.custom-scrollbar)::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Make sure root still shows a normal scrollbar */
+html::-webkit-scrollbar, body::-webkit-scrollbar, #__next::-webkit-scrollbar {
+  display: block !important;
+}
+
+html, body, #__next {
+  scrollbar-width: auto;
+}
+
 /* Timeline Logic for Editor */
 .bn-block-content[data-content-type="bulletListItem"] {
   position: relative;
