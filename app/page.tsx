@@ -41,8 +41,8 @@ export default async function LandingPage() {
               <span className="w-2 h-2 rounded-full bg-rose-500 block" />
               <span className="text-white font-semibold">OpenLog</span>
             </div>
-            {/* compact star pill (matches provided reference) */}
-            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="absolute right-2 top-1/2 -translate-y-1/2 z-50 inline-flex items-center gap-3 px-3 py-1 rounded-full bg-[#070707]/80 border border-white/8 text-sm text-zinc-200 shadow-sm">
+            {/* compact star pill (matches provided reference) - positioned to the right */}
+            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-3 px-3 py-1 rounded-full bg-[#070707]/80 border border-white/8 text-sm text-zinc-200 shadow-sm">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
               <div className="flex flex-col leading-tight text-xs">
                 <span className="opacity-80">Star</span>
@@ -55,10 +55,7 @@ export default async function LandingPage() {
               <a className="hover:text-white">Changelog</a>
               <a className="hover:text-white">Docs</a>
             </nav>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/6 border border-white/8">
-              <Star size={12} className="text-amber-400" />
-              <span className="text-xs font-medium">2.4k</span>
-            </div>
+            
             <Link href="/sign-in" className="ml-2 px-3 py-1 rounded-md bg-white/3 text-sm">Login</Link>
           </div>
         </div>
@@ -96,19 +93,10 @@ export default async function LandingPage() {
               <div>
                 <script type="module" />
               </div>
-               <div className="mt-6 relative">
-                 {/* show the real app screenshot plainly for clarity */}
-                 <img src="/hero-screenshot.png" alt="OpenLog screenshot" className="mx-auto mt-6 w-[92%] max-w-6xl rounded-2xl shadow-2xl object-contain z-20" />
-                 {/* add corner star CTA over the screenshot */}
-                 <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="absolute right-[6.5%] top-[6%] z-50 inline-flex items-center gap-3 px-3 py-2 rounded-full bg-[#0A0A0B]/80 border border-white/8 text-sm text-zinc-200 shadow-sm backdrop-blur-sm hover:scale-105 transition-transform">
-                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
-                   <div className="hidden sm:flex flex-col text-xs leading-tight">
-                     <span className="opacity-80">Star</span>
-                     <span className="font-medium">on GitHub</span>
-                   </div>
-                   <div className="ml-3 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
-                 </a>
-               </div>
+                <div className="mt-6 relative">
+                  {/* show the real app screenshot plainly for clarity (no overlaid CTA) */}
+                  <img src="/hero-screenshot.png" alt="OpenLog screenshot" className="mx-auto mt-6 w-[92%] max-w-6xl rounded-2xl shadow-2xl object-contain z-20" />
+                </div>
             </div>
           </div>
         </section>
@@ -179,7 +167,7 @@ export default async function LandingPage() {
             <h2 className="text-3xl font-extrabold text-white mb-4">Automate your legacy.</h2>
             <p className="text-zinc-400 max-w-2xl mx-auto mb-8">Join elite developer teams saving hours every single sprint. Experience the liquid interface of OpenLog today.</p>
             <div className="flex items-center justify-center gap-4">
-              <Link href="/sign-up" className="px-6 py-3 rounded-full bg-[#FF4F4F] text-white font-semibold">Get Started Free</Link>
+              <Link href="/sign-in" className="px-6 py-3 rounded-full bg-[#FF4F4F] text-white font-semibold">Get Started Free</Link>
               <a href="/docs" className="px-6 py-3 rounded-full border border-white/10 text-white/90">Read Docs</a>
             </div>
           </div>
