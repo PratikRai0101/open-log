@@ -7,6 +7,7 @@ import LinkGitHub from "../../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 import QuickSearch from "../../components/QuickSearch";
 import { OpenLogIcon } from "../../components/OpenLogIcon";
+import { OpenLogLogo } from "../../components/OpenLogLogo";
 
 import ScrollHint from "../../components/ScrollHint";
 
@@ -71,6 +72,10 @@ export default async function Dashboard() {
             Real-time Sync Active
           </div>
           
+          <div className="flex items-center justify-center mb-4">
+            <OpenLogLogo />
+          </div>
+
           <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
             Open Log
           </h1>
