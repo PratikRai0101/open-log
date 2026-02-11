@@ -15,6 +15,7 @@ import {
 import HeroProductShot from "../components/HeroProductShot";
 import dynamic from "next/dynamic";
 import PlayDemoButton from "../components/PlayDemoButton";
+import { OpenLogIcon } from "../components/OpenLogIcon";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -76,16 +77,19 @@ export default async function LandingPage() {
         {/* inner container: allow content to flow so browser native scroll is used */}
         <div>
         {/* HERO */}
-        <section className="relative px-6 pt-12 pb-24">
+        <section className="relative px-6 pt-12 pb-24 min-h-[calc(100vh-4rem)] flex items-center">
           <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/10 text-xs text-zinc-400 font-medium mb-6">
               <Sparkles size={14} className="text-[#FF4F4F]" />
               <span className="flex items-center gap-2">Build with Love <span aria-hidden className="text-rose-400 heart-animate">❤️</span></span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6">
-              Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4F4F] to-rose-400">OpenLog.</span> <br className="hidden md:block"/> 
-              The end of manual release notes.
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6 flex flex-col items-center">
+              <span className="flex items-center gap-3">
+                <OpenLogIcon className="w-10 h-10" />
+                Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4F4F] to-rose-400">OpenLog.</span>
+              </span>
+              <span className="mt-2">The end of manual release notes.</span>
             </h1>
 
             <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed">
