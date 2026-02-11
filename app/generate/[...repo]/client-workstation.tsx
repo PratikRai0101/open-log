@@ -677,8 +677,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                 <div
                   className="flex-1 custom-scrollbar pb-4 min-h-0 overflow-y-auto"
                   style={{ overscrollBehavior: 'contain' }}
-                  onWheel={(e) => { e.stopPropagation(); }}
-                  onTouchMove={(e) => { e.stopPropagation(); }}
                 >
                {/* Selection header with count */}
                <div className="px-5 py-3 border-b border-white/6 flex items-center justify-between">
@@ -766,8 +764,6 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                        <div
                          className="flex-1 relative min-h-0 pb-10 custom-scrollbar overflow-y-auto"
                          style={{ overscrollBehavior: 'contain' }}
-                         onWheel={(e) => { e.stopPropagation(); }}
-                         onTouchMove={(e) => { e.stopPropagation(); }}
                        >
                          <div className="flex items-center justify-end px-4 mb-2">
                            <div className="text-[11px] text-zinc-500 mr-3">Draft saved:</div>
