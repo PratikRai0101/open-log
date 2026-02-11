@@ -71,7 +71,7 @@ export default async function Dashboard() {
           </div>
           
           <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-b from-white to-white/50 tracking-tighter mb-4 pb-2">
-            Command Center
+            Open Log
           </h1>
         </div>
 
