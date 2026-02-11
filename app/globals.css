@@ -444,19 +444,61 @@ body{
 }
 
 /* Visual polish for read-only preview: hide editor UI affordances (caret, commands). */
+/* Keep these rules scoped under `.bn-readonly` so write mode is unaffected. */
 .bn-readonly .bn-block-group:after,
 .bn-readonly .bn-block__ghost,
 .bn-readonly .bn-block-selector,
 .bn-readonly .bn-toolbar,
 .bn-readonly .bn-placeholder,
-.bn-readonly .bn-type-prompt {
+.bn-readonly .bn-type-prompt,
+/* Additional aggressive selectors to cover BlockNote DOM variants */
+.bn-readonly [class*="toolbar"],
+.bn-readonly [class*="Toolbar"],
+.bn-readonly [class*="floating"],
+.bn-readonly [class*="popover"],
+.bn-readonly [class*="menu"],
+.bn-readonly [class*="block-control"],
+.bn-readonly [class*="block-controls"],
+.bn-readonly [class*="block-handle"],
+.bn-readonly [class*="drag"],
+.bn-readonly .bn-floating-toolbar,
+.bn-readonly .bn-block-controls,
+.bn-readonly .bn-block-control,
+.bn-readonly .bn-block-handle,
+.bn-readonly .bn-drag-handle,
+.bn-readonly .bn-block__handle,
+.bn-readonly .bn-block-menu,
+.bn-readonly .bn-editor__inline-toolbar,
+.bn-readonly [role="toolbar"],
+.bn-readonly .mantine-Menu-root,
+.bn-readonly .mantine-Menu,
+.bn-readonly .mantine-Popover-root,
+.bn-readonly .bn-popover,
+.bn-readonly .bn-context,
+.bn-readonly .bn-hover-tools,
+.bn-readonly .bn-add-block,
+.bn-readonly .bn-add-button,
+.bn-readonly .bn-block-add,
+.bn-readonly [data-testid*="toolbar"],
+.bn-readonly [data-testid*="menu"],
+.bn-readonly [data-testid*="popover"] {
   display: none !important;
   opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .bn-readonly .bn-editor__content,
 .bn-readonly .bn-view__content {
   caret-color: transparent !important;
+}
+
+/* Also hide pseudo-elements used by some builds */
+.bn-readonly [class*="toolbar"]::before,
+.bn-readonly [class*="toolbar"]::after,
+.bn-readonly .bn-block-group::before,
+.bn-readonly .bn-block-group::after {
+  display: none !important;
+  content: none !important;
 }
 
 /* Preview parity: make ReactMarkdown preview visually match BlockNote editor */
