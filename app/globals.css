@@ -335,9 +335,6 @@ body{
   body { min-height: 100vh; }
 }
 
-/* Ensure only the document scrolls on landing page: remove inner overflow on common containers */
-.custom-scrollbar { overflow: visible !important; max-height: none !important; }
-
 /* Public page streaks, timeline and crystal card styles */
 .bg-streak-1 {
   position: fixed;
