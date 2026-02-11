@@ -1,4 +1,3 @@
-<!-- Hero + badges modeled after Better Shot README style -->
 <div align="center">
   <a href="https://www.linkedin.com/in/pratikrai0101/"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"/></a>
   <a href="https://x.com/PratikRai0101"><img alt="X (Twitter)" src="https://img.shields.io/badge/X-%231DA1F2.svg?style=for-the-badge&logo=X&logoColor=white"/></a>
@@ -15,7 +14,10 @@
 
 ---
 
-![openlog-hero](/public/OpenLog-Demo.mp)
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/96f42b17-66ea-40bd-8116-ba4c9700261f" width="100%" autoPlay loop muted playsInline></video>
+</div>
+<br/>
 
 > OpenLog automates changelog writing. Select commits, generate an AI draft (Groq), polish in a rich BlockNote workstation, and publish to GitHub Releases.
 
