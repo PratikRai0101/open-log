@@ -565,12 +565,19 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#050505] text-zinc-300 font-sans overflow-hidden">
+    <div className="bg-[#050505] text-zinc-300 font-sans min-h-screen w-full">
       {/* GLOBAL HEADER */}
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
              <Link href="/" className="text-zinc-500 hover:text-zinc-300 transition-colors"><ArrowLeft size={16} /></Link>
-             <span className="font-bold text-zinc-100 tracking-tight">OpenLog</span>
+             <div className="flex items-center gap-3">
+               <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
+                 <path d="M14 6H10C7.79 6 6 7.79 6 10V22C6 24.21 7.79 26 10 26H14" stroke="#71717A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                 <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18V6Z" fill="#FF4D4D" fillOpacity="0.2" />
+                 <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18" stroke="#FF4D4D" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+               </svg>
+               <span className="font-bold text-zinc-100 tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>OpenLog</span>
+             </div>
              <span className="text-zinc-700">/</span>
              <span className="text-sm text-zinc-400 font-mono truncate max-w-50">{repoName}</span>
           </div>
@@ -666,8 +673,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
               </div>
            </div>
 
-            {/* Minimalist Commit List */}
-             <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
+               {/* Minimalist Commit List */}
+               <div className="flex-1 custom-scrollbar pb-4 min-h-0">
                {/* Selection header with count */}
                <div className="px-5 py-3 border-b border-white/6 flex items-center justify-between">
                  <div className="flex items-center gap-3">
@@ -735,8 +742,8 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                </div>
             </div>
 
-           {/* Editor Canvas */}
-            <div className="flex-1 overflow-hidden relative">
+            {/* Editor Canvas */}
+                          <div className="flex-1 relative min-h-0">
                 {isGenerating && !generated ? (
                    <div className="h-full flex flex-col px-12 pt-8 overflow-hidden">
                       <TextSkeleton lines={12} />

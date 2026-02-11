@@ -6,6 +6,7 @@ import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import LinkGitHub from "../../components/LinkGitHub";
 import { Terminal, Search, ArrowRight, Lock, Globe } from "lucide-react";
 import QuickSearch from "../../components/QuickSearch";
+import { OpenLogIcon } from "../../components/OpenLogIcon";
 
 import ScrollHint from "../../components/ScrollHint";
 
@@ -24,12 +25,12 @@ export default async function Dashboard() {
 
       {/* Header */}
       <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#050505]/60 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="size-8 flex items-center justify-center text-[#FF4F4F] bg-white/5 rounded-lg border border-white/5 shadow-[0_0_15px_rgba(255,79,79,0.2)]">
-              <Terminal size={18} />
+              <OpenLogIcon className="w-5 h-5" />
             </div>
-            <span className="font-semibold text-sm tracking-tight text-white">OpenLog</span>
+            <span className="font-semibold text-sm tracking-tight text-white" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>OpenLog</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -59,7 +60,7 @@ export default async function Dashboard() {
       {/* Main Content - Added extra padding-top to ensure nothing is hidden behind header */}
       <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:bg-white/5 focus:px-3 focus:py-2 focus:rounded">Skip to content</a>
 
-      <main id="content" className="max-w-3xl mx-auto px-6 pt-20 pb-20 relative z-10 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+      <main id="content" className="max-w-3xl mx-auto px-6 pt-20 pb-20 relative z-10">
         <div className="text-center mb-12">
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/2 border border-white/5 text-[11px] font-medium text-zinc-400 mb-6 backdrop-blur-md">
