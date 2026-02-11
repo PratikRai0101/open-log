@@ -23,25 +23,36 @@ export default async function LandingPage() {
   const { userId } = await auth();
   if (userId) redirect("/dashboard");
 
-  // Fetch GitHub repo metadata (stargazers count) once per hour so we can
-  // display an accurate star count in the header. This runs on the server
-  // during SSR so there is no client-side bundle impact.
+  // Fetch GitHub repo metadata (stargazers, forks, watchers, open issues)
+  // once per hour so we can display up-to-date stats on the landing page.
+  // Server-side fetch avoids exposing client-side rate limits.
   let starsDisplay = null as string | null;
+  let forksDisplay = null as string | null;
+  let issuesDisplay = null as string | null;
+  let watchersDisplay = null as string | null;
   try {
     const gh = await fetch("https://api.github.com/repos/PratikRai0101/open-log", { next: { revalidate: 3600 } });
     if (gh.ok) {
       const data = await gh.json();
-      const n = Number(data.stargazers_count || 0);
       const fmt = (v: number) => {
         if (v >= 1000000) return `${(v / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
         if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
         return String(v);
       };
-      starsDisplay = fmt(n);
+      const stars = Number(data.stargazers_count || 0);
+      const forks = Number(data.forks_count || 0);
+      const issues = Number(data.open_issues_count || 0);
+      // subscribers_count is the number of people watching (not stargazers)
+      const watchers = Number(data.subscribers_count || data.watchers_count || 0);
+
+      starsDisplay = fmt(stars);
+      forksDisplay = fmt(forks);
+      issuesDisplay = fmt(issues);
+      watchersDisplay = fmt(watchers);
     }
   } catch (e) {
-    // ignore network errors — we simply won't show a count
-    starsDisplay = null;
+    // ignore network errors — fallback to null (UI will keep placeholders)
+    starsDisplay = forksDisplay = issuesDisplay = watchersDisplay = null;
   }
 
   // video state: note — this component is server-side; we render a client play button via a small client-only wrapper below
@@ -163,20 +174,20 @@ export default async function LandingPage() {
         <section className="px-6 py-12 border-t border-white/5">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-extrabold text-white">10k+</div>
-              <div className="text-xs text-zinc-500 mt-2">Changelogs</div>
-            </div>
-            <div>
-              <div className="text-3xl font-extrabold text-white">500+</div>
-              <div className="text-xs text-zinc-500 mt-2">OSS Repos</div>
-            </div>
-            <div>
-              <div className="text-3xl font-extrabold text-white">99%</div>
-              <div className="text-xs text-zinc-500 mt-2">Time Saved</div>
-            </div>
-            <div>
-              <div className="text-3xl font-extrabold text-white">2.4k</div>
+              <div className="text-3xl font-extrabold text-white">{starsDisplay ?? '—'}</div>
               <div className="text-xs text-zinc-500 mt-2">GitHub Stars</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-white">{forksDisplay ?? '—'}</div>
+              <div className="text-xs text-zinc-500 mt-2">Forks</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-white">{watchersDisplay ?? '—'}</div>
+              <div className="text-xs text-zinc-500 mt-2">Watchers</div>
+            </div>
+            <div>
+              <div className="text-3xl font-extrabold text-white">{issuesDisplay ?? '—'}</div>
+              <div className="text-xs text-zinc-500 mt-2">Open Issues</div>
             </div>
           </div>
         </section>
@@ -188,7 +199,8 @@ export default async function LandingPage() {
             <p className="text-zinc-400 max-w-2xl mx-auto mb-8">Join elite developer teams saving hours every single sprint. Experience the liquid interface of OpenLog today.</p>
             <div className="flex items-center justify-center gap-4">
               <Link href="/sign-in" className="px-6 py-3 rounded-full bg-[#FF4F4F] text-white font-semibold">Get Started Free</Link>
-              <a href="https://github.com/PratikRai0101/open-log?tab=readme-ov-file" className="px-6 py-3 rounded-full border border-white/10 text-white/90">Read Docs</a>
+              {/* Read Docs -> direct link to repository README on GitHub */}
+              <a href="https://github.com/PratikRai0101/open-log#readme" target="_blank" rel="noreferrer" className="px-6 py-3 rounded-full border border-white/10 text-white/90">Read Docs</a>
             </div>
           </div>
         </section>
