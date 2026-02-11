@@ -652,9 +652,9 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
       </header>
 
       {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden relative z-10">
+      <div className="flex-1 flex overflow-hidden relative z-10 h-[calc(100vh-4rem)]">
         {/* SIDEBAR: Full Height, No "Card" Look */}
-         <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0">
+         <aside className="w-90 flex flex-col border-r border-white/5 bg-[#050505] shrink-0 h-full">
            {/* Search */}
            <div className="p-4 border-b border-white/5 space-y-3">
               <div className="relative">
@@ -675,7 +675,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
 
                 {/* Minimalist Commit List */}
                 <div
-                  className="flex-1 custom-scrollbar pb-4 min-h-0 overflow-y-auto"
+                  className="flex-1 h-full custom-scrollbar pb-4 min-h-0 overflow-y-auto"
                   style={{ overscrollBehavior: 'contain' }}
                 >
                {/* Selection header with count */}
@@ -715,7 +715,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
         </aside>
 
         {/* EDITOR AREA */}
-         <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0">
+          <main className="flex-1 flex flex-col bg-[#050505] relative min-w-0 h-full">
            {/* Toolbar */}
             <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-[#050505] shrink-0">
                <div className="flex items-center gap-2">
@@ -761,10 +761,10 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
                         </div>
                      </div>
                       {/* The Editor */}
-                       <div
-                         className="flex-1 relative min-h-0 pb-10 custom-scrollbar overflow-y-auto"
-                         style={{ overscrollBehavior: 'contain' }}
-                       >
+                        <div
+                          className="flex-1 relative h-full min-h-0 pb-10 custom-scrollbar overflow-y-auto"
+                          style={{ overscrollBehavior: 'contain' }}
+                        >
                          <div className="flex items-center justify-end px-4 mb-2">
                            <div className="text-[11px] text-zinc-500 mr-3">Draft saved:</div>
                            <div className="text-[11px] text-zinc-400 font-mono">{lastSavedAt ? formatAgo(lastSavedAt) : (savedDraft ? 'just now' : 'never')}</div>
