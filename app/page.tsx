@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import HeroProductShot from "../components/HeroProductShot";
 import dynamic from "next/dynamic";
+const PlayDemoButton = dynamic(() => import("../components/PlayDemoButton"), { ssr: false });
 import { OpenLogLogo } from "../components/OpenLogLogo";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -108,9 +109,7 @@ export default async function LandingPage() {
                 </Link>
 
                 {/* Play Demo CTA */}
-                <button className="flex items-center gap-2 px-8 py-3.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold transition-all">
-                  <PlayCircle size={18} /> Play demo
-                </button>
+                <PlayDemoButton />
               </div>
               {/* Subtle GitHub CTA underneath */}
               <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/6 text-sm font-medium transition-all mt-2">
