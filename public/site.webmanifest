@@ -1,0 +1,15 @@
+{
+  "name": "OpenLog",
+  "short_name": "OpenLog",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#050505",
+  "background_color": "#050505"
+}
