@@ -73,11 +73,11 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      <main className="pt-24">
+      <main className="pt-16">
         {/* inner container: allow content to flow so browser native scroll is used */}
         <div>
         {/* HERO */}
-        <section className="relative px-6 pt-12 pb-24 min-h-[calc(100vh-4rem)] flex items-center">
+        <section className="relative px-6 min-h-[calc(100vh-4rem)] flex items-center py-12">
           <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/10 text-xs text-zinc-400 font-medium mb-6">
               <Sparkles size={14} className="text-[#FF4F4F]" />
@@ -92,7 +92,7 @@ export default async function LandingPage() {
               <span className="mt-2">The end of manual release notes.</span>
             </h1>
 
-            <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed">
+            <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed items-center justify-center flex mx-auto">
               Stop copy-pasting raw commits. Connect your repository, select your updates, and let AI generate beautifully formatted changelogs in seconds. Built for power users.
             </p>
 
