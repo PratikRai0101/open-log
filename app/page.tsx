@@ -41,6 +41,15 @@ export default async function LandingPage() {
               <span className="w-2 h-2 rounded-full bg-rose-500 block" />
               <span className="text-white font-semibold">OpenLog</span>
             </div>
+            {/* compact star pill (matches provided reference) */}
+            <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-3 py-1 rounded-full bg-[#070707]/80 border border-white/8 text-sm text-zinc-200 shadow-sm">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
+              <div className="flex flex-col leading-tight text-xs">
+                <span className="opacity-80">Star</span>
+                <span className="font-medium">on GitHub</span>
+              </div>
+              <div className="ml-2 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
+            </a>
             <nav className="flex items-center gap-4 text-zinc-300">
               <a className="hover:text-white">Features</a>
               <a className="hover:text-white">Changelog</a>
@@ -63,7 +72,7 @@ export default async function LandingPage() {
           <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/10 text-xs text-zinc-400 font-medium mb-6">
               <Sparkles size={14} className="text-[#FF4F4F]" />
-              <span>New: V2 engine — faster, smarter</span>
+              <span>Build with Love ♥</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-tight max-w-5xl mx-auto">
