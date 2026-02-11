@@ -13,12 +13,16 @@ import {
   Star,
 } from "lucide-react";
 import HeroProductShot from "../components/HeroProductShot";
+import dynamic from "next/dynamic";
+import PlayDemoButton from "../components/PlayDemoButton";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 export default async function LandingPage() {
   const { userId } = await auth();
   if (userId) redirect("/dashboard");
+
+  // video state: note — this component is server-side; we render a client play button via a small client-only wrapper below
 
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white overflow-x-hidden">
@@ -83,7 +87,10 @@ export default async function LandingPage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
-              <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Try it out now <ArrowRight size={16} /></Link>
+              <div className="flex items-center gap-4">
+                <Link href="/sign-in" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FF4F4F] hover:bg-[#FF4F4F]/90 text-white font-semibold shadow-sm transition">Try it out now <ArrowRight size={16} /></Link>
+                <PlayDemoButton />
+              </div>
               <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 text-white/90 font-medium">View GitHub Repo</a>
             </div>
 
@@ -168,7 +175,7 @@ export default async function LandingPage() {
             <p className="text-zinc-400 max-w-2xl mx-auto mb-8">Join elite developer teams saving hours every single sprint. Experience the liquid interface of OpenLog today.</p>
             <div className="flex items-center justify-center gap-4">
               <Link href="/sign-in" className="px-6 py-3 rounded-full bg-[#FF4F4F] text-white font-semibold">Get Started Free</Link>
-              <a href="/docs" className="px-6 py-3 rounded-full border border-white/10 text-white/90">Read Docs</a>
+              <a href="https://github.com/PratikRai0101/open-log?tab=readme-ov-file" className="px-6 py-3 rounded-full border border-white/10 text-white/90">Read Docs</a>
             </div>
           </div>
         </section>
