@@ -187,6 +187,22 @@ body{
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* Heart animation for "Build with Love" pill */
+.heart-animate {
+  display: inline-block;
+  transform-origin: center;
+  animation: heart-breathe 2200ms cubic-bezier(.2,.9,.2,1) infinite;
+}
+@keyframes heart-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.heart-animate:hover {
+  animation-play-state: paused; /* pause gentle breathe so hover transform takes precedence */
+  transform: scale(1.28);
+  transition: transform 180ms cubic-bezier(.2,.9,.2,1);
+}
+
 .anamorphic-flare-1 {
   width: 820px;
   height: 420px;
