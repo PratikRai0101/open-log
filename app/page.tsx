@@ -28,11 +28,18 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white overflow-x-hidden">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#000000]/60 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-white font-bold">OL</div>
-            <span className="text-white font-semibold tracking-tight">OpenLog</span>
-          </div>
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Replace simple text logo with the branded logo SVG */}
+              <a href="/" className="flex items-center gap-3">
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+                  <path d="M14 6H10C7.79 6 6 7.79 6 10V22C6 24.21 7.79 26 10 26H14" stroke="#71717A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18V6Z" fill="#FF4D4D" fillOpacity="0.2" />
+                  <path d="M18 6H22C24.21 6 26 7.79 26 10V22C26 24.21 24.21 26 22 26H18" stroke="#FF4D4D" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-white font-semibold tracking-tight" style={{ fontFamily: 'var(--font-space-grotesk), sans-serif' }}>OpenLog</span>
+              </a>
+            </div>
           <div className="flex items-center gap-4">
             {/* Intentionally empty to keep header spacing — main nav is centered in the pill */}
             <div className="h-8" />
@@ -66,8 +73,8 @@ export default async function LandingPage() {
       </header>
 
       <main className="pt-24">
-        {/* Use native page scrolling to avoid nested scrollbars; keep custom scrollbar styles for visuals */}
-        <div className="custom-scrollbar">
+        {/* inner container: allow content to flow so browser native scroll is used */}
+        <div>
         {/* HERO */}
         <section className="relative px-6 pt-12 pb-24">
           <div className="max-w-7xl mx-auto text-center">
