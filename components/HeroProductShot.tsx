@@ -3,9 +3,9 @@
 import React, { useEffect, useRef } from "react";
 import { Zap } from "lucide-react";
 
-type Props = { imageSrc?: string };
+type Props = { imageSrc?: string; screenshotOnly?: boolean };
 
-export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: Props) {
+export default function HeroProductShot({ imageSrc = "/hero-screenshot.png", screenshotOnly = false }: Props) {
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -112,6 +112,23 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: P
 
         {/* optional screenshot overlay (behind content) */}
         <img src={imageSrc} alt="Product screenshot" className="absolute left-1/2 transform -translate-x-1/2 bottom-0 w-[92%] h-auto max-h-[420px] object-cover opacity-100 pointer-events-none z-0 rounded-2xl shadow-2xl" />
+
+        {/* corner star button (on top of screenshot) */}
+        <a
+          href="https://github.com/PratikRai0101/open-log"
+          target="_blank"
+          rel="noreferrer"
+          className="absolute right-6 top-6 z-40 inline-flex items-center gap-3 px-3 py-2 rounded-full bg-[#0A0A0B]/80 border border-white/8 text-sm text-zinc-200 shadow-sm backdrop-blur-sm hover:scale-105 transition-transform"
+        >
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-black/60 border border-white/8 text-amber-400">
+            ★
+          </span>
+          <div className="hidden sm:flex flex-col text-xs leading-tight">
+            <span className="opacity-80">Star</span>
+            <span className="font-medium">on GitHub</span>
+          </div>
+          <div className="ml-3 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
+        </a>
       </div>
     </div>
   );
