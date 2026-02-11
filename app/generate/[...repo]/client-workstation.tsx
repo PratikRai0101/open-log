@@ -70,6 +70,29 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     }
   }, []);
 
+  // Wheel handler: some environments don't deliver wheel events to inner
+  // overflow containers when html/body overflow is hidden. Intercept wheel on
+  // the outer container and forward the delta to the nearest `.custom-scrollbar`
+  // under the pointer so inner panes still scroll naturally.
+  function onWheelForward(e: React.WheelEvent<HTMLDivElement>) {
+    try {
+      const target = e.target as HTMLElement | null;
+      let el: HTMLElement | null = null;
+      if (target) el = target.closest('.custom-scrollbar') as HTMLElement | null;
+      if (!el) {
+        const at = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+        if (at) el = at.closest('.custom-scrollbar') as HTMLElement | null;
+      }
+      if (el) {
+        // Forward scroll delta and prevent default so the document doesn't chew it.
+        el.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
   // State
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generated, setGenerated] = useState<string>(""); 
@@ -595,7 +618,7 @@ export default function ClientWorkstation({ initialCommits, repoName }: Workstat
     // Prevent document/root scrolling on this workstation page. Commit list and
     // editor panes are independent native scroll surfaces; lock the outer
     // container to avoid any page-level scroll chaining.
-    <div className="bg-[#050505] text-zinc-300 font-sans h-screen w-full overflow-hidden">
+    <div onWheel={onWheelForward} className="bg-[#050505] text-zinc-300 font-sans h-screen w-full overflow-hidden">
       {/* GLOBAL HEADER */}
       <header className="h-14 px-5 flex items-center justify-between border-b border-white/5 bg-[#050505] shrink-0 z-20 relative">
           <div className="flex items-center gap-3">
