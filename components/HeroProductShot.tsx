@@ -56,7 +56,7 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: P
   return (
     <div className="mt-14">
       <div className="relative mx-auto max-w-6xl w-full rounded-2xl border border-white/6 bg-gradient-to-b from-black/40 to-transparent p-6 backdrop-blur-md shadow-2xl overflow-hidden hero-inner-glow">
-        <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-20">
           <div className="rounded-xl border border-white/5 p-6 bg-[#050505]">
             <div className="flex items-center gap-2 mb-4 text-xs font-mono text-zinc-500">
               <span className="px-2 py-1 rounded bg-white/3">git_log --pretty=oneline</span>
@@ -102,7 +102,7 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: P
         </div>
 
         {/* center indicator */}
-        <div ref={indicatorRef} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div ref={indicatorRef} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30">
           <div className="w-20 h-20 rounded-full bg-gradient-to-r from-rose-500/40 to-rose-600/30 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-xl pulse-indicator">
             <div className="w-12 h-12 rounded-full bg-black/50 border border-rose-400/30 flex items-center justify-center">
               <Zap className="text-rose-400" size={20} />
@@ -110,8 +110,8 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: P
           </div>
         </div>
 
-        {/* optional screenshot overlay */}
-        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none mix-blend-overlay" />
+        {/* optional screenshot overlay (behind content) */}
+        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0 rounded-2xl" />
       </div>
     </div>
   );
