@@ -83,14 +83,13 @@ export default async function LandingPage() {
               <span className="flex items-center gap-2">Build with Love <span aria-hidden className="text-rose-400 heart-animate">❤️</span></span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-white leading-tight max-w-5xl mx-auto">
-              Stop writing manual
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white/95 to-white/60">release notes.</span>
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight max-w-4xl mb-6">
+              Meet <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4F4F] to-rose-400">OpenLog.</span> <br className="hidden md:block"/> 
+              The end of manual release notes.
             </h1>
 
-            <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto">
-              Connect your GitHub, select commits, and let AI generate beautifully formatted changelogs in seconds. Open-source and built for power users.
+            <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed">
+              Stop copy-pasting raw commits. Connect your repository, select your updates, and let AI generate beautifully formatted changelogs in seconds. Built for power users.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4">
