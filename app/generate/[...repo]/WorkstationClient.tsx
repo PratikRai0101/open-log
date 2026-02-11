@@ -248,7 +248,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
   }
 
   return (
-    <div className="h-screen flex bg-[#050505] text-zinc-300 overflow-hidden font-sans selection:bg-[#FF4F4F] selection:text-white">
+    <div className="bg-[#050505] text-zinc-300 font-sans selection:bg-[#FF4F4F] selection:text-white min-h-screen">
       
       {/* LEFT PANEL: Commit Selection */}
       <aside className="w-100 shrink-0 h-full flex flex-col border-r border-white/5 bg-[#0A0A0B]">
@@ -279,7 +279,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         </div>
 
         {/* Commit List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+         <div className="flex-1 p-2 space-y-1 custom-scrollbar min-h-0">
           {loading ? (
             <div className="p-4 text-zinc-500 text-sm">Loading commits…</div>
           ) : commits.length === 0 ? (
@@ -332,7 +332,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
             </>
           )}
         </div>
-      </aside>
+       </aside>
 
       {/* RIGHT PANEL: AI Editor */}
       <main className="flex-1 flex flex-col min-w-0 relative">
@@ -389,7 +389,7 @@ export default function WorkstationClient({ initialCommits = [], repo }: Worksta
         </div>
 
         {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-8 relative z-10">
+          <div className="flex-1 p-8 relative z-10 min-h-0">
             {/* Top progress / error indicators */}
             <div className="max-w-3xl mx-auto mb-4">
               {isGenerating && (
