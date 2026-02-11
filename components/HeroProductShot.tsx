@@ -9,12 +9,11 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png", scr
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Simple parallax: move the indicator slightly based on scroll position
+  // Parallax: subtle vertical translate for depth
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       if (indicatorRef.current) {
-        // translate less for subtle parallax
         indicatorRef.current.style.transform = `translateY(${y * -0.03}px) translateX(-50%)`;
       }
       if (containerRef.current) {
@@ -25,7 +24,7 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png", scr
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Stagger reveal for commit lines
+  // Stagger reveal for small elements (if present)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -39,19 +38,66 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png", scr
         ln.style.transform = "translateY(0)";
       }, 80 + i * 100);
     });
-
-    // reveal the release notes column slightly after commit lines
-    const release = el.querySelector<HTMLDivElement>(".release-col");
-    if (release) {
-      release.style.opacity = "0";
-      release.style.transform = "translateY(6px)";
-      setTimeout(() => {
-        release.style.transition = "opacity 420ms cubic-bezier(.2,.9,.2,1), transform 420ms cubic-bezier(.2,.9,.2,1)";
-        release.style.opacity = "1";
-        release.style.transform = "translateY(0)";
-      }, 300 + lines.length * 90);
-    }
   }, []);
+
+  // Screenshot-only reveal animation
+  useEffect(() => {
+    if (!screenshotOnly) return;
+    const el = containerRef.current;
+    if (!el) return;
+    el.style.opacity = "0";
+    el.style.transform = "translateY(12px)";
+    setTimeout(() => {
+      el.style.transition = "opacity 520ms cubic-bezier(.2,.9,.2,1), transform 520ms cubic-bezier(.2,.9,.2,1)";
+      el.style.opacity = "1";
+      el.style.transform = "translateY(0)";
+    }, 60);
+  }, [screenshotOnly]);
+
+  if (screenshotOnly) {
+    return (
+      <div className="mt-14">
+        <div ref={containerRef} className="relative mx-auto max-w-6xl w-full rounded-2xl p-6 shadow-2xl overflow-visible">
+          <div className="relative mx-auto w-[92%] max-w-6xl rounded-2xl bg-[#070707]/60 border border-white/6 glass-card p-4">
+            {/* browser chrome */}
+            <div className="flex items-center gap-2 px-3 pb-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+            </div>
+
+            <div className="rounded-xl overflow-hidden mt-2 relative">
+              <img src={imageSrc} alt="Product screenshot" className="w-full h-[420px] object-cover block shadow-2xl" />
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-black/10 to-black/40 mix-blend-overlay"></div>
+            </div>
+
+            {/* reflection - mirrored blurred image faded out */}
+            <div className="mt-4 overflow-hidden rounded-b-2xl">
+              <img src={imageSrc} alt="reflection" className="w-full h-24 object-cover transform scale-y-[-1] opacity-10 blur-sm" />
+            </div>
+
+            {/* subtle reflection overlay */}
+            <div className="absolute left-0 right-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-40 pointer-events-none rounded-b-2xl"></div>
+
+            {/* corner star button (on top of screenshot) */}
+            <a
+              href="https://github.com/PratikRai0101/open-log"
+              target="_blank"
+              rel="noreferrer"
+              className="absolute right-6 top-6 z-40 inline-flex items-center gap-3 px-3 py-2 rounded-full bg-[#0A0A0B]/80 border border-white/8 text-sm text-zinc-200 shadow-sm backdrop-blur-sm hover:scale-105 transition-transform"
+            >
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-black/60 border border-white/8 text-amber-400">★</span>
+              <div className="hidden sm:flex flex-col text-xs leading-tight">
+                <span className="opacity-80">Star</span>
+                <span className="font-medium">on GitHub</span>
+              </div>
+              <div className="ml-3 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-14">
@@ -111,24 +157,7 @@ export default function HeroProductShot({ imageSrc = "/hero-screenshot.png", scr
         </div>
 
         {/* optional screenshot overlay (behind content) */}
-        <img src={imageSrc} alt="Product screenshot" className="absolute left-1/2 transform -translate-x-1/2 bottom-0 w-[92%] h-auto max-h-[420px] object-cover opacity-100 pointer-events-none z-0 rounded-2xl shadow-2xl" />
-
-        {/* corner star button (on top of screenshot) */}
-        <a
-          href="https://github.com/PratikRai0101/open-log"
-          target="_blank"
-          rel="noreferrer"
-          className="absolute right-6 top-6 z-40 inline-flex items-center gap-3 px-3 py-2 rounded-full bg-[#0A0A0B]/80 border border-white/8 text-sm text-zinc-200 shadow-sm backdrop-blur-sm hover:scale-105 transition-transform"
-        >
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-black/60 border border-white/8 text-amber-400">
-            ★
-          </span>
-          <div className="hidden sm:flex flex-col text-xs leading-tight">
-            <span className="opacity-80">Star</span>
-            <span className="font-medium">on GitHub</span>
-          </div>
-          <div className="ml-3 px-2 py-1 rounded-full bg-black/60 text-xs font-medium text-white/90">2.4k</div>
-        </a>
+        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0 rounded-2xl" />
       </div>
     </div>
   );
