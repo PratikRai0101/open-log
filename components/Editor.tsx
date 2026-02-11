@@ -504,12 +504,15 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
     <div
       ref={containerRef}
       className={`bg-[#0A0A0B] rounded-xl border border-white/10 relative min-h-0 ${!editable ? 'opacity-90 bn-readonly' : ''}`}>
-      {/* Editor content: avoid forcing an inner scrollbar so page-level native scroll is used */}
-      <div className="custom-scrollbar">
+      {/* Editor content: make the wrapper an explicit, opted-in scroll surface so
+          it reliably captures wheel/trackpad input and shows the custom
+          thin scrollbar. Keep BlockNote content height-fluid so the wrapper
+          controls scrolling. */}
+      <div className="custom-scrollbar h-full min-h-0 overflow-y-auto">
         <BlockNoteView
           editor={editor}
           theme="dark"
-          className="min-h-full py-4 pl-4 pr-2"
+          className="h-full min-h-0 py-4 pl-4 pr-2"
         />
       </div>
 

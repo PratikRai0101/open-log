@@ -23,6 +23,27 @@ export default async function LandingPage() {
   const { userId } = await auth();
   if (userId) redirect("/dashboard");
 
+  // Fetch GitHub repo metadata (stargazers count) once per hour so we can
+  // display an accurate star count in the header. This runs on the server
+  // during SSR so there is no client-side bundle impact.
+  let starsDisplay = null as string | null;
+  try {
+    const gh = await fetch("https://api.github.com/repos/PratikRai0101/open-log", { next: { revalidate: 3600 } });
+    if (gh.ok) {
+      const data = await gh.json();
+      const n = Number(data.stargazers_count || 0);
+      const fmt = (v: number) => {
+        if (v >= 1000000) return `${(v / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+        if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+        return String(v);
+      };
+      starsDisplay = fmt(n);
+    }
+  } catch (e) {
+    // ignore network errors — we simply won't show a count
+    starsDisplay = null;
+  }
+
   // video state: note — this component is server-side; we render a client play button via a small client-only wrapper below
 
   return (
@@ -40,6 +61,7 @@ export default async function LandingPage() {
             <a href="https://github.com/PratikRai0101/open-log" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm text-zinc-200 hover:text-white">
               <span className="text-amber-400">★</span>
               <span className="font-medium">Star on GitHub</span>
+              {starsDisplay && <span className="ml-2 text-xs text-zinc-400 font-mono">{starsDisplay}</span>}
             </a>
 
             <Link href="/sign-in" className="px-3 py-2 rounded-md bg-white/10 hover:bg-white/20 text-sm text-white">Login</Link>
