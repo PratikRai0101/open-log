@@ -71,7 +71,7 @@ export default async function LandingPage() {
               <div className="mt-6">
                 {/* client component */}
                 {/* @ts-ignore */}
-                <HeroProductShot imageSrc="/assets/product-screenshot.png" />
+                <HeroProductShot imageSrc="/hero-screenshot.png" />
               </div>
             </div>
           </div>

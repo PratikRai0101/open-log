@@ -5,7 +5,7 @@ import { Zap } from "lucide-react";
 
 type Props = { imageSrc?: string };
 
-export default function HeroProductShot({ imageSrc = "/product-shot.svg" }: Props) {
+export default function HeroProductShot({ imageSrc = "/hero-screenshot.png" }: Props) {
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,8 +37,20 @@ export default function HeroProductShot({ imageSrc = "/product-shot.svg" }: Prop
         ln.style.transition = "opacity 360ms cubic-bezier(.2,.9,.2,1), transform 360ms cubic-bezier(.2,.9,.2,1)";
         ln.style.opacity = "1";
         ln.style.transform = "translateY(0)";
-      }, 120 + i * 120);
+      }, 80 + i * 100);
     });
+
+    // reveal the release notes column slightly after commit lines
+    const release = el.querySelector<HTMLDivElement>(".release-col");
+    if (release) {
+      release.style.opacity = "0";
+      release.style.transform = "translateY(6px)";
+      setTimeout(() => {
+        release.style.transition = "opacity 420ms cubic-bezier(.2,.9,.2,1), transform 420ms cubic-bezier(.2,.9,.2,1)";
+        release.style.opacity = "1";
+        release.style.transform = "translateY(0)";
+      }, 300 + lines.length * 90);
+    }
   }, []);
 
   return (
@@ -99,7 +111,7 @@ export default function HeroProductShot({ imageSrc = "/product-shot.svg" }: Prop
         </div>
 
         {/* optional screenshot overlay */}
-        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none" />
+        <img src={imageSrc} alt="Product screenshot" className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none mix-blend-overlay" />
       </div>
     </div>
   );
