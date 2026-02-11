@@ -517,11 +517,11 @@ const Editor = forwardRef(function Editor({ initialMarkdown, onChange, editable 
           floating UI (toolbars, block handles) can't be used. The overlay is
           transparent to preserve visuals but intercepts pointer events. */}
       {!editable && (
+        // Allow pointer events to pass through so users can still scroll the preview.
+        // Block editing via contentEditable=false (set elsewhere) and global input blockers.
         <div
           aria-hidden
-          className="absolute inset-0 z-20 pointer-events-auto"
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          className="absolute inset-0 z-20 pointer-events-none"
         />
       )}
     </div>
