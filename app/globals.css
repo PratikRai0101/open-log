@@ -167,6 +167,24 @@ body{
   opacity: .95;
   z-index: 0;
 }
+
+/* Hero inner glow and pulse indicator animation */
+.hero-inner-glow::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(closest-side, rgba(255,79,79,0.06), transparent 30%);
+  filter: blur(80px) saturate(120%);
+  z-index: -1;
+}
+
+.pulse-indicator { animation: pulse 2000ms ease-in-out infinite; }
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.88; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .anamorphic-flare-1 {
   width: 820px;
   height: 420px;
